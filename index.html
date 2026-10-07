@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>KD Captain | Durga Puja 2026 Fleet & Revenue Tracker</title>
+  <title>KD Captain | Durga Puja 2026 Fleet, Timeline & Revenue</title>
   
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -27,7 +27,7 @@
     }
   </style>
 </head>
-<body class="bg-slate-50 text-slate-800 antialiased font-sans">
+<body class="bg-slate-100 text-slate-800 antialiased font-sans">
   <div id="root"></div>
 
   <script type="text/babel">
@@ -38,99 +38,119 @@
     const SUPABASE_KEY = "sb_publishable_HRMQgDnzbWgKC2ocml3T5A_DrMQhE3Q";
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // 5-Color Repeating Palette for 11 Puja Days
+    // Live Durga Puja 2026 Schedule starting from 08 Oct with 5-Color Repeating Scheme
     const PUJA_SCHEDULE = [
-      { date: "2026-10-10", label: "Mahalaya", colorClass: "text-indigo-600 bg-indigo-50 border-indigo-200" },
-      { date: "2026-10-11", label: "Pratipada", colorClass: "text-emerald-600 bg-emerald-50 border-emerald-200" },
-      { date: "2026-10-12", label: "Dwitiya", colorClass: "text-amber-600 bg-amber-50 border-amber-200" },
-      { date: "2026-10-13", label: "Tritiya", colorClass: "text-purple-600 bg-purple-50 border-purple-200" },
-      { date: "2026-10-14", label: "Chaturthi", colorClass: "text-teal-600 bg-teal-50 border-teal-200" },
-      { date: "2026-10-15", label: "Panchami", colorClass: "text-indigo-600 bg-indigo-50 border-indigo-200" },
-      { date: "2026-10-16", label: "Maha Sasthi", colorClass: "text-emerald-600 bg-emerald-50 border-emerald-200" },
-      { date: "2026-10-17", label: "Maha Saptami", colorClass: "text-amber-600 bg-amber-50 border-amber-200" },
-      { date: "2026-10-18", label: "Maha Asthami", colorClass: "text-purple-600 bg-purple-50 border-purple-200" },
-      { date: "2026-10-19", label: "Maha Navami", colorClass: "text-teal-600 bg-teal-50 border-teal-200" },
-      { date: "2026-10-20", label: "Vijaya Dashami", colorClass: "text-indigo-600 bg-indigo-50 border-indigo-200" },
+      { date: "2026-10-08", label: "Today / Pre-Puja", colorClass: "text-indigo-700 bg-indigo-50 border-indigo-200" },
+      { date: "2026-10-09", label: "Pre-Puja", colorClass: "text-emerald-700 bg-emerald-50 border-emerald-200" },
+      { date: "2026-10-10", label: "Mahalaya", colorClass: "text-amber-700 bg-amber-50 border-amber-200" },
+      { date: "2026-10-11", label: "Pratipada", colorClass: "text-purple-700 bg-purple-50 border-purple-200" },
+      { date: "2026-10-12", label: "Dwitiya", colorClass: "text-teal-700 bg-teal-50 border-teal-200" },
+      { date: "2026-10-13", label: "Tritiya", colorClass: "text-indigo-700 bg-indigo-50 border-indigo-200" },
+      { date: "2026-10-14", label: "Chaturthi", colorClass: "text-emerald-700 bg-emerald-50 border-emerald-200" },
+      { date: "2026-10-15", label: "Panchami", colorClass: "text-amber-700 bg-amber-50 border-amber-200" },
+      { date: "2026-10-16", label: "Maha Sasthi", colorClass: "text-purple-700 bg-purple-50 border-purple-200" },
+      { date: "2026-10-17", label: "Maha Saptami", colorClass: "text-teal-700 bg-teal-50 border-teal-200" },
+      { date: "2026-10-18", label: "Maha Asthami", colorClass: "text-indigo-700 bg-indigo-50 border-indigo-200" },
+      { date: "2026-10-19", label: "Maha Navami", colorClass: "text-emerald-700 bg-emerald-50 border-emerald-200" },
+      { date: "2026-10-20", label: "Vijaya Dashami", colorClass: "text-amber-700 bg-amber-50 border-amber-200" },
+      { date: "2026-10-21", label: "Ekadashi", colorClass: "text-purple-700 bg-purple-50 border-purple-200" },
+      { date: "2026-10-22", label: "Dwadashi", colorClass: "text-teal-700 bg-teal-50 border-teal-200" },
+      { date: "2026-10-23", label: "Return Day", colorClass: "text-indigo-700 bg-indigo-50 border-indigo-200" }
     ];
 
-    // Language Dictionary (English & Hindi)
-    const DICTIONARY = {
+    const TRANSLATIONS = {
       en: {
-        subtitle: "Durga Puja 2026 Fleet & Revenue Tracker (Kolkata / Delhi)",
-        tabTimeline: "Booking Timeline",
-        tabCustomers: "Customer Database",
+        tagline: "Durga Puja 2026 Fleet & Revenue ERP (Kolkata / Delhi)",
+        tabDashboard: "📊 Revenue Dashboard",
+        tabTimeline: "🛵 Fleet & Timeline",
+        tabCustomers: "📁 Customer Database",
         totalRevenue: "Total Revenue (Booked)",
         totalCollected: "Total Collected (Advance)",
         totalDue: "Total Due (Pending)",
-        fleetStrength: "Fleet Status",
+        fleetStrength: "Fleet Vehicles",
         petrolGrid: "Petrol Scooty Dashboard",
         evGrid: "EV Scooty Dashboard",
-        addPetrol: "Add Petrol Vehicle",
-        addEv: "Add EV Vehicle",
-        garage: "Garage / Maintenance",
-        active: "Active",
-        available: "Available",
-        booked: "Booked",
-        inGarage: "In Garage",
+        addPetrol: "+ Add Petrol Scooty",
+        addEv: "+ Add EV Scooty",
         rentPerDay: "Rent/Day",
         vehicle: "Vehicle / Model",
-        action: "Action"
+        action: "Action",
+        active: "ACTIVE",
+        inGarage: "IN GARAGE",
+        garage: "GARAGE",
+        booked: "BOOKED",
+        available: "AVAILABLE",
+        collectionRatioTitle: "Revenue Collection vs Due Balance",
+        fleetRatioTitle: "Petrol vs EV Earnings Share"
       },
       hi: {
-        subtitle: "दुर्गा पूजा 2026 फ्लीट और रेवेन्यू ट्रैकर (कोलकाता / दिल्ली)",
-        tabTimeline: "बुकिंग टाइमलाइन",
-        tabCustomers: "कस्टमर डेटाबेस",
+        tagline: "दुर्गा पूजा 2026 फ्लीट और रेवेन्यू ईआरपी (कोलकाता / दिल्ली)",
+        tabDashboard: "📊 रेवेन्यू डैशबोर्ड",
+        tabTimeline: "🛵 फ्लीट और टाइमलाइन",
+        tabCustomers: "📁 कस्टमर डेटाबेस",
         totalRevenue: "कुल रेवेन्यू (बुकिंग मूल्य)",
-        totalCollected: "कुल जमा (एडवांस मिला)",
-        totalDue: "कुल बाकी (डिलीवरी पर)",
-        fleetStrength: "गाड़ी स्थिति",
+        totalCollected: "कुल जमा राशि (एडवांस)",
+        totalDue: "कुल बाकी रकम (डिलीवरी पर)",
+        fleetStrength: "कुल गाड़ियां",
         petrolGrid: "पेट्रोल स्कूटी डैशबोर्ड",
         evGrid: "ईवी स्कूटी डैशबोर्ड",
-        addPetrol: "पेट्रोल गाड़ी जोड़ें",
-        addEv: "ईवी गाड़ी जोड़ें",
-        garage: "गैराज / मेंटेनेंस",
-        active: "चालू है",
-        available: "खाली है",
-        booked: "बुक है",
-        inGarage: "गैराज में है",
+        addPetrol: "+ पेट्रोल गाड़ी जोड़ें",
+        addEv: "+ ईवी गाड़ी जोड़ें",
         rentPerDay: "किराया/दिन",
-        vehicle: "गाड़ी / मॉडल",
-        action: "कार्रवाई"
+        vehicle: "गाड़ी / मॉडल",
+        action: "कार्रवाई",
+        active: "चालू है",
+        inGarage: "गैराज में है",
+        garage: "गैराज",
+        booked: "बुक है",
+        available: "खाली है",
+        collectionRatioTitle: "कुल जमा बनाम बाकी बैलेंस",
+        fleetRatioTitle: "पेट्रोल बनाम ईवी कमाई शेयर"
       }
     };
 
     function App() {
       const [lang, setLang] = useState('en');
-      const t = DICTIONARY[lang];
+      const t = TRANSLATIONS[lang];
 
+      const [activeTab, setActiveTab] = useState('dashboard');
       const [vehicles, setVehicles] = useState([]);
       const [bookings, setBookings] = useState([]);
       const [loading, setLoading] = useState(true);
-      const [activeTab, setActiveTab] = useState('timeline');
 
       // Modals
       const [showAddVehicleModal, setShowAddVehicleModal] = useState(false);
       const [vehicleTypeToAdd, setVehicleTypeToAdd] = useState('petrol');
       const [showSlotActionModal, setShowSlotActionModal] = useState(false);
-      const [selectedSlot, setSelectedSlot] = useState(null); // { vehicle, date }
+      const [selectedSlot, setSelectedSlot] = useState(null);
       const [showBookingModal, setShowBookingModal] = useState(false);
       const [selectedBookingDetail, setSelectedBookingDetail] = useState(null);
       const [showInvoiceModal, setShowInvoiceModal] = useState(null);
 
-      // Forms
+      // New Vehicle Form
       const [newVehicle, setNewVehicle] = useState({ model_name: '', vehicle_type: 'petrol', registration_no: '', daily_rent: '' });
+      
+      // Multi-slot Booking State
       const [newBooking, setNewBooking] = useState({
-        customer_name: '', customer_phone: '', customer_whatsapp: '',
-        start_date: '', end_date: '', total_rent: 0, advance_paid: 0, due_amount: 0,
-        security_deposit: '', original_id_collected: false
+        customer_name: '',
+        customer_name_hi: '',
+        customer_phone: '',
+        customer_whatsapp: '',
+        slots: [{ start_date: '', end_date: '' }],
+        total_rent: 0,
+        advance_paid: 0,
+        due_amount: 0,
+        security_deposit: '',
+        original_id_collected: false
       });
+
       const [maintenanceRange, setMaintenanceRange] = useState({ start_date: '', end_date: '' });
 
       // Chart Refs
-      const revenueChartRef = useRef(null);
-      const fleetChartRef = useRef(null);
-      const revenueChartInstance = useRef(null);
-      const fleetChartInstance = useRef(null);
+      const collectionChartRef = useRef(null);
+      const categoryChartRef = useRef(null);
+      const collectionChartInstance = useRef(null);
+      const categoryChartInstance = useRef(null);
 
       const fetchData = async () => {
         try {
@@ -149,7 +169,7 @@
         fetchData();
       }, []);
 
-      // Metrics
+      // Financial Metrics Calculation
       const validBookings = bookings.filter(b => b.booking_status !== 'maintenance');
       const totalRevenue = validBookings.reduce((acc, b) => acc + (parseFloat(b.total_rent) || 0), 0);
       const totalCollected = validBookings.reduce((acc, b) => acc + (parseFloat(b.advance_paid) || 0), 0);
@@ -169,64 +189,117 @@
 
       // Render Charts
       useEffect(() => {
-        if (loading) return;
+        if (loading || activeTab !== 'dashboard') return;
 
-        if (revenueChartRef.current) {
-          if (revenueChartInstance.current) revenueChartInstance.current.destroy();
-          const ctx = revenueChartRef.current.getContext('2d');
-          revenueChartInstance.current = new Chart(ctx, {
+        if (collectionChartRef.current) {
+          if (collectionChartInstance.current) collectionChartInstance.current.destroy();
+          const ctx = collectionChartRef.current.getContext('2d');
+          collectionChartInstance.current = new Chart(ctx, {
             type: 'doughnut',
             data: {
-              labels: [lang === 'en' ? 'Collected (Advance)' : 'जमा राशि (एडवांस)', lang === 'en' ? 'Due Amount' : 'बाकी रकम'],
+              labels: [lang === 'en' ? 'Collected (Advance)' : 'जमा राशि (एडवांस)', lang === 'en' ? 'Due Balance' : 'बाकी रकम'],
               datasets: [{
                 data: [totalCollected || 1, totalDue || 0],
                 backgroundColor: ['#10B981', '#F43F5E'],
-                borderWidth: 2,
+                borderWidth: 3,
                 borderColor: '#ffffff'
               }]
             },
             options: {
               responsive: true,
               maintainAspectRatio: false,
-              plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } } }
+              plugins: { legend: { position: 'bottom', labels: { boxWidth: 14, font: { size: 12, weight: 'bold' } } } }
             }
           });
         }
 
-        if (fleetChartRef.current) {
-          if (fleetChartInstance.current) fleetChartInstance.current.destroy();
-          const ctx = fleetChartRef.current.getContext('2d');
-          fleetChartInstance.current = new Chart(ctx, {
+        if (categoryChartRef.current) {
+          if (categoryChartInstance.current) categoryChartInstance.current.destroy();
+          const ctx = categoryChartRef.current.getContext('2d');
+          categoryChartInstance.current = new Chart(ctx, {
             type: 'doughnut',
             data: {
-              labels: [lang === 'en' ? 'Petrol Scooty' : 'पेट्रोल स्कूटी', lang === 'en' ? 'EV Scooty' : 'ईवी स्कूटी'],
+              labels: [lang === 'en' ? 'Petrol Fleet' : 'पेट्रोल फ्लीट', lang === 'en' ? 'EV Fleet' : 'ईवी फ्लीट'],
               datasets: [{
                 data: [petrolRevenue || 1, evRevenue || 0],
                 backgroundColor: ['#F59E0B', '#06B6D4'],
-                borderWidth: 2,
+                borderWidth: 3,
                 borderColor: '#ffffff'
               }]
             },
             options: {
               responsive: true,
               maintainAspectRatio: false,
-              plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } } }
+              plugins: { legend: { position: 'bottom', labels: { boxWidth: 14, font: { size: 12, weight: 'bold' } } } }
             }
           });
         }
       }, [bookings, vehicles, loading, activeTab, lang]);
 
-      // Calculations
-      const autoCalculateAmounts = (startDate, endDate, advance, dailyRate) => {
-        if (!startDate || !endDate || !dailyRate) return;
-        const d1 = new Date(startDate);
-        const d2 = new Date(endDate);
-        const diffDays = Math.max(1, Math.round((d2 - d1) / (1000 * 3600 * 24)));
-        const total = diffDays * parseFloat(dailyRate);
+      // Calculate Total Days & Rent for Multiple Slots
+      const calculateMultiSlotAmounts = (slots, advance, dailyRate) => {
+        if (!dailyRate) return;
+        let totalDays = 0;
+
+        slots.forEach(slot => {
+          if (slot.start_date && slot.end_date) {
+            const d1 = new Date(slot.start_date);
+            const d2 = new Date(slot.end_date);
+            const diff = Math.max(1, Math.round((d2 - d1) / (1000 * 3600 * 24)));
+            totalDays += diff;
+          }
+        });
+
+        const total = totalDays * parseFloat(dailyRate);
         const adv = parseFloat(advance) || 0;
         const due = Math.max(0, total - adv);
 
-        setNewBooking(prev => ({ ...prev, total_rent: total, advance_paid: adv, due_amount: due }));
+        setNewBooking(prev => ({
+          ...prev,
+          slots,
+          total_rent: total,
+          advance_paid: adv,
+          due_amount: due
+        }));
+      };
+
+      const handleSlotChange = (index, field, value) => {
+        const updatedSlots = [...newBooking.slots];
+        updatedSlots[index][field] = value;
+        calculateMultiSlotAmounts(updatedSlots, newBooking.advance_paid, selectedSlot?.vehicle?.daily_rent);
+      };
+
+      const addDateSlot = () => {
+        const updatedSlots = [...newBooking.slots, { start_date: '', end_date: '' }];
+        setNewBooking(prev => ({ ...prev, slots: updatedSlots }));
+      };
+
+      const removeDateSlot = (index) => {
+        if (newBooking.slots.length <= 1) return;
+        const updatedSlots = newBooking.slots.filter((_, i) => i !== index);
+        calculateMultiSlotAmounts(updatedSlots, newBooking.advance_paid, selectedSlot?.vehicle?.daily_rent);
+      };
+
+      // Simple phonetic converter helper for Hindi transliteration
+      const convertToHindiPhonetic = () => {
+        if (!newBooking.customer_name) return;
+        // Basic transliteration / phonetic reflection
+        setNewBooking(prev => ({
+          ...prev,
+          customer_name_hi: prev.customer_name
+        }));
+      };
+
+      // Check if a vehicle is booked on a date
+      const getBookingForDate = (vehicleId, dateStr) => {
+        return bookings.find(b => {
+          if (b.vehicle_id !== vehicleId) return false;
+          if (b.additional_slots && Array.isArray(b.additional_slots)) {
+            const inSlots = b.additional_slots.some(s => dateStr >= s.start_date && dateStr <= s.end_date);
+            if (inSlots) return true;
+          }
+          return dateStr >= b.start_date && dateStr <= b.end_date;
+        });
       };
 
       const handleAddVehicle = async (e) => {
@@ -254,7 +327,7 @@
       };
 
       const handleDeleteVehicle = async (vehicleId, name) => {
-        if (confirm(`Are you sure you want to delete ${name} permanently?`)) {
+        if (confirm(`Are you sure you want to permanently delete ${name}?`)) {
           const { error } = await supabase.from('vehicles').delete().eq('id', vehicleId);
           if (!error) fetchData();
           else alert('Error: ' + error.message);
@@ -263,13 +336,17 @@
 
       const handleAddBooking = async (e) => {
         e.preventDefault();
+        const firstSlot = newBooking.slots[0];
+        
         const { error } = await supabase.from('bookings').insert([{
           vehicle_id: selectedSlot.vehicle.id,
           customer_name: newBooking.customer_name,
+          customer_name_hi: newBooking.customer_name_hi || newBooking.customer_name,
           customer_phone: newBooking.customer_phone,
           customer_whatsapp: newBooking.customer_whatsapp,
-          start_date: newBooking.start_date,
-          end_date: newBooking.end_date,
+          start_date: firstSlot.start_date,
+          end_date: firstSlot.end_date,
+          additional_slots: newBooking.slots,
           total_rent: parseFloat(newBooking.total_rent) || 0,
           advance_paid: parseFloat(newBooking.advance_paid) || 0,
           security_deposit: parseFloat(newBooking.security_deposit) || 0,
@@ -293,6 +370,7 @@
           customer_whatsapp: 'N/A',
           start_date: maintenanceRange.start_date,
           end_date: maintenanceRange.end_date,
+          additional_slots: [{ start_date: maintenanceRange.start_date, end_date: maintenanceRange.end_date }],
           total_rent: 0,
           advance_paid: 0,
           security_deposit: 0,
@@ -302,15 +380,22 @@
         if (!error) {
           setShowSlotActionModal(false);
           fetchData();
-        } else alert('Error marking maintenance: ' + error.message);
+        } else alert('Error marking garage: ' + error.message);
       };
 
       const handleCancelMaintenance = async (maintenanceId) => {
-        if (confirm('Make this date slot available again?')) {
+        if (confirm('Release vehicle from Garage and make Available?')) {
           const { error } = await supabase.from('bookings').delete().eq('id', maintenanceId);
           if (!error) fetchData();
           else alert('Error: ' + error.message);
         }
+      };
+
+      const formatSlotDates = (booking) => {
+        if (booking.additional_slots && Array.isArray(booking.additional_slots) && booking.additional_slots.length > 0) {
+          return booking.additional_slots.map(s => `${s.start_date.slice(5)} to ${s.end_date.slice(5)}`).join(' & ');
+        }
+        return `${booking.start_date.slice(5)} to ${booking.end_date.slice(5)}`;
       };
 
       const sendWhatsAppInvoice = (booking, vehicle) => {
@@ -322,7 +407,7 @@
         const text = `*KD CAPTAIN - DURGA PUJA 2026 BOOKING CONFIRMATION*\n\n` +
           `👤 *Customer Name:* ${booking.customer_name}\n` +
           `🛵 *Vehicle Model:* ${vehicle ? vehicle.model_name : 'Scooty'} (${vehicle ? vehicle.registration_no || 'Assigned' : ''})\n` +
-          `📅 *Dates:* ${booking.start_date} to ${booking.end_date}\n` +
+          `📅 *Booked Slots:* ${formatSlotDates(booking)}\n` +
           `💰 *Total Rental Charge:* ₹${booking.total_rent}\n` +
           `💳 *Advance Received:* ₹${booking.advance_paid}\n` +
           `🔴 *Due Balance at Handover:* ₹${due}\n` +
@@ -334,96 +419,92 @@
         window.open(`https://wa.me/${cleanNumber.length === 10 ? '91' + cleanNumber : cleanNumber}?text=${encodeURIComponent(text)}`, '_blank');
       };
 
-      const getBookingForDate = (vehicleId, dateStr) => {
-        return bookings.find(b => b.vehicle_id === vehicleId && dateStr >= b.start_date && dateStr <= b.end_date);
-      };
-
       const petrolVehicles = vehicles.filter(v => v.vehicle_type === 'petrol');
       const evVehicles = vehicles.filter(v => v.vehicle_type === 'ev');
 
       const renderGrid = (list, title, type, badgeColor) => (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-8">
-          <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-blue-50/50">
-            <div className="flex items-center gap-3">
-              <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${badgeColor}`}>
-                {type.toUpperCase()}
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-10">
+          <div className="px-8 py-5 border-b border-slate-200 flex justify-between items-center bg-blue-50/60">
+            <div className="flex items-center gap-4">
+              <span className={`px-3.5 py-1 text-xs font-black tracking-wider rounded-lg uppercase ${badgeColor}`}>
+                {type}
               </span>
-              <h2 className="text-base font-bold text-slate-800">{title}</h2>
-              <span className="text-xs text-slate-500 font-medium">({list.length} Vehicles)</span>
+              <h2 className="text-xl font-black text-slate-800 tracking-tight">{title}</h2>
+              <span className="text-sm text-slate-500 font-bold">({list.length} {t.fleetStrength})</span>
             </div>
             <button
               onClick={() => { setVehicleTypeToAdd(type); setShowAddVehicleModal(true); }}
-              className="text-xs px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm transition flex items-center gap-1.5"
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs shadow-md transition flex items-center gap-2"
             >
-              <i className="fa-solid fa-plus"></i> {type === 'petrol' ? t.addPetrol : t.addEv}
+              <i className="fa-solid fa-plus text-sm"></i> {type === 'petrol' ? t.addPetrol : t.addEv}
             </button>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
+            <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-blue-100/70 text-blue-900 border-b border-blue-200 font-bold uppercase">
-                  <th className="p-3 sticky left-0 bg-blue-100 z-10 w-48 shadow-sm">{t.vehicle}</th>
-                  <th className="p-3 w-20">{t.rentPerDay}</th>
+                <tr className="bg-blue-100 text-blue-950 border-b border-blue-200 font-black tracking-wide uppercase text-xs">
+                  <th className="p-4 sticky left-0 bg-blue-100 z-10 w-56 shadow-sm">{t.vehicle}</th>
+                  <th className="p-4 w-28 text-center">{t.rentPerDay}</th>
                   {PUJA_SCHEDULE.map(item => (
-                    <th key={item.date} className="p-2 text-center min-w-[85px] border-l border-blue-200">
-                      <div className={`text-[10px] py-0.5 px-1 rounded border font-black tracking-tight mb-0.5 ${item.colorClass}`}>
+                    <th key={item.date} className="p-3 text-center min-w-[95px] border-l border-blue-200">
+                      <div className={`text-[10px] py-1 px-1.5 rounded-lg border font-black tracking-tight mb-1 shadow-xs ${item.colorClass}`}>
                         {item.label}
                       </div>
-                      <div className="text-[11px] font-semibold text-slate-600">{item.date.slice(5)}</div>
+                      <div className="text-xs font-black text-slate-700">{item.date.slice(5)}</div>
                     </th>
                   ))}
-                  <th className="p-3 text-center w-20">{t.action}</th>
+                  <th className="p-4 text-center w-20">{t.action}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 text-xs">
                 {list.length === 0 ? (
                   <tr>
-                    <td colSpan={PUJA_SCHEDULE.length + 3} className="p-6 text-center text-slate-400">
-                      No {type} vehicles added yet.
+                    <td colSpan={PUJA_SCHEDULE.length + 3} className="p-10 text-center text-slate-400 font-medium text-sm">
+                      No {type} vehicles added yet. Click above to add your first vehicle.
                     </td>
                   </tr>
                 ) : (
                   list.map(v => {
                     const isVehicleActive = v.is_active !== false;
                     return (
-                      <tr key={v.id} className={`hover:bg-amber-50/40 transition ${!isVehicleActive ? 'bg-slate-100/70 opacity-70' : ''}`}>
-                        <td className="p-3 font-semibold text-slate-700 sticky left-0 bg-white z-10 shadow-sm border-r border-slate-200">
-                          <div className="flex items-center justify-between">
-                            <span className="font-bold text-blue-700 text-[13px]">{v.model_name}</span>
+                      <tr key={v.id} className={`hover:bg-amber-50/40 transition ${!isVehicleActive ? 'bg-slate-100/80 opacity-70' : ''}`}>
+                        <td className="p-4 font-bold text-slate-800 sticky left-0 bg-white z-10 shadow-sm border-r border-slate-200">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="font-black text-blue-700 text-base">{v.model_name}</span>
                             <button
                               onClick={() => handleToggleMasterVehicle(v)}
-                              className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase border ${isVehicleActive ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : 'bg-rose-50 text-rose-700 border-rose-300'}`}
-                              title="Toggle master garage status"
+                              className={`text-[10px] px-2 py-0.5 rounded-md font-black uppercase border transition shadow-xs ${isVehicleActive ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-rose-100 text-rose-800 border-rose-300'}`}
+                              title="Toggle Active / Garage"
                             >
                               {isVehicleActive ? '● ON' : '○ OFF'}
                             </button>
                           </div>
-                          <div className="text-[10px] text-slate-400 font-normal">{v.registration_no || 'Reg Pending'}</div>
+                          <div className="text-xs text-slate-400 font-semibold">{v.registration_no || 'Reg Pending'}</div>
                         </td>
-                        <td className="p-3 text-slate-600 font-medium">₹{v.daily_rent}</td>
+                        <td className="p-4 text-slate-700 font-black text-center text-sm">₹{v.daily_rent}</td>
                         {PUJA_SCHEDULE.map(item => {
                           const booking = getBookingForDate(v.id, item.date);
                           const isMaintenance = booking && booking.booking_status === 'maintenance';
 
                           return (
-                            <td key={item.date} className="p-1 border-l border-slate-100 text-center">
+                            <td key={item.date} className="p-1.5 border-l border-slate-100 text-center">
                               {!isVehicleActive ? (
-                                <div className="py-1.5 px-1 bg-slate-200 text-slate-600 rounded text-[10px] font-medium">
+                                <div className="py-2 px-1 bg-slate-200 text-slate-600 rounded-lg text-[10px] font-black uppercase">
                                   {t.inGarage}
                                 </div>
                               ) : isMaintenance ? (
                                 <button
                                   onClick={() => handleCancelMaintenance(booking.id)}
-                                  className="w-full py-1.5 px-1 bg-amber-100 text-amber-800 border border-amber-300 rounded text-[10px] font-bold hover:bg-amber-200 transition"
-                                  title="Click to release from Garage"
+                                  className="w-full py-2 px-1 bg-amber-100 text-amber-900 border border-amber-300 rounded-lg text-[10px] font-black uppercase hover:bg-amber-200 transition shadow-xs"
+                                  title="Release from Garage"
                                 >
                                   {t.garage}
                                 </button>
                               ) : booking ? (
                                 <button
                                   onClick={() => setSelectedBookingDetail({ booking, vehicle: v })}
-                                  className="w-full py-1.5 px-1 bg-rose-100 text-rose-800 border border-rose-300 rounded text-[11px] font-bold hover:bg-rose-200 transition shadow-xs"
+                                  className="w-full py-2 px-1 bg-rose-100 text-rose-800 border border-rose-300 rounded-lg text-xs font-black uppercase hover:bg-rose-200 transition shadow-xs"
                                 >
                                   {t.booked}
                                 </button>
@@ -432,15 +513,21 @@
                                   onClick={() => {
                                     setSelectedSlot({ vehicle: v, date: item.date });
                                     setNewBooking({
-                                      customer_name: '', customer_phone: '', customer_whatsapp: '',
-                                      start_date: item.date, end_date: item.date,
-                                      total_rent: v.daily_rent, advance_paid: 0, due_amount: v.daily_rent,
-                                      security_deposit: '', original_id_collected: false
+                                      customer_name: '',
+                                      customer_name_hi: '',
+                                      customer_phone: '',
+                                      customer_whatsapp: '',
+                                      slots: [{ start_date: item.date, end_date: item.date }],
+                                      total_rent: v.daily_rent,
+                                      advance_paid: 0,
+                                      due_amount: v.daily_rent,
+                                      security_deposit: '',
+                                      original_id_collected: false
                                     });
                                     setMaintenanceRange({ start_date: item.date, end_date: item.date });
                                     setShowSlotActionModal(true);
                                   }}
-                                  className="w-full py-1.5 px-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded text-[11px] font-medium hover:bg-emerald-100 transition"
+                                  className="w-full py-2 px-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-black uppercase hover:bg-emerald-100 transition shadow-xs"
                                 >
                                   {t.available}
                                 </button>
@@ -448,10 +535,10 @@
                             </td>
                           );
                         })}
-                        <td className="p-2 text-center border-l border-slate-100">
+                        <td className="p-4 text-center border-l border-slate-100">
                           <button
                             onClick={() => handleDeleteVehicle(v.id, v.model_name)}
-                            className="text-slate-400 hover:text-rose-600 p-1"
+                            className="text-slate-400 hover:text-rose-600 p-1.5 transition text-base"
                             title="Delete Vehicle"
                           >
                             <i className="fa-regular fa-trash-can"></i>
@@ -468,236 +555,251 @@
       );
 
       return (
-        <div className="min-h-screen p-4 md:p-8 max-w-[1600px] mx-auto">
-          {/* Header */}
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center pb-6 border-b border-slate-200 gap-4 mb-6">
+        <div className="min-h-screen p-4 md:p-8 max-w-[1700px] mx-auto">
+          {/* Main Top Header */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <div>
-              <div className="flex items-center gap-2">
-                <span className="bg-blue-600 text-white font-black text-sm px-2 py-0.5 rounded shadow-sm">KD</span>
-                <h1 className="text-2xl font-black tracking-tight text-slate-900 uppercase">KD Captain</h1>
+              <div className="flex items-center gap-3">
+                <span className="bg-blue-600 text-white font-black text-lg px-3 py-1 rounded-xl shadow-md">KD</span>
+                <h1 className="text-3xl font-black tracking-tight text-slate-900 uppercase">KD CAPTAIN</h1>
               </div>
-              <p className="text-xs text-slate-500 mt-1 font-medium">{t.subtitle}</p>
+              <p className="text-sm font-semibold text-slate-500 mt-1.5">{t.tagline}</p>
             </div>
-            
-            <div className="flex items-center gap-3">
+
+            <div className="flex flex-wrap items-center gap-3">
               {/* Language Switcher */}
-              <div className="flex bg-slate-200 p-0.5 rounded-lg text-xs font-bold">
+              <div className="flex bg-slate-200 p-1 rounded-xl font-black text-xs mr-2">
                 <button
                   onClick={() => setLang('en')}
-                  className={`px-2.5 py-1 rounded-md transition ${lang === 'en' ? 'bg-white text-blue-700 shadow-xs' : 'text-slate-600'}`}
+                  className={`px-3 py-1.5 rounded-lg transition ${lang === 'en' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600'}`}
                 >
-                  EN
+                  ENGLISH
                 </button>
                 <button
                   onClick={() => setLang('hi')}
-                  className={`px-2.5 py-1 rounded-md transition ${lang === 'hi' ? 'bg-white text-blue-700 shadow-xs' : 'text-slate-600'}`}
+                  className={`px-3 py-1.5 rounded-lg transition ${lang === 'hi' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600'}`}
                 >
                   हिन्दी
                 </button>
               </div>
 
+              {/* 3 Main Tabs */}
+              <button
+                onClick={() => setActiveTab('dashboard')}
+                className={`px-4 py-2.5 rounded-xl text-sm font-black transition flex items-center gap-2 ${activeTab === 'dashboard' ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+              >
+                {t.tabDashboard}
+              </button>
               <button
                 onClick={() => setActiveTab('timeline')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${activeTab === 'timeline' ? 'bg-blue-600 text-white shadow-sm' : 'bg-white border text-slate-700 hover:bg-slate-50'}`}
+                className={`px-4 py-2.5 rounded-xl text-sm font-black transition flex items-center gap-2 ${activeTab === 'timeline' ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
               >
-                <i className="fa-solid fa-calendar-days"></i> {t.tabTimeline}
+                {t.tabTimeline}
               </button>
               <button
                 onClick={() => setActiveTab('customers')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${activeTab === 'customers' ? 'bg-blue-600 text-white shadow-sm' : 'bg-white border text-slate-700 hover:bg-slate-50'}`}
+                className={`px-4 py-2.5 rounded-xl text-sm font-black transition flex items-center gap-2 ${activeTab === 'customers' ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
               >
-                <i className="fa-solid fa-users"></i> {t.tabCustomers} ({validBookings.length})
+                {t.tabCustomers} ({validBookings.length})
               </button>
             </div>
           </div>
 
-          {/* Revenue Analytics Cards & Pie Charts */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-            <div className="bg-white p-5 rounded-xl border border-blue-200 shadow-sm flex flex-col justify-between">
-              <div>
-                <span className="text-[11px] font-bold tracking-wider text-blue-600 uppercase">{t.totalRevenue}</span>
-                <div className="text-2xl font-black text-slate-900 mt-2">₹{totalRevenue.toLocaleString()}</div>
-              </div>
-              <p className="text-[10px] text-slate-400 mt-2">10 Oct to 20 Oct Fleet Booking</p>
-            </div>
-
-            <div className="bg-white p-5 rounded-xl border border-emerald-200 shadow-sm flex flex-col justify-between">
-              <div>
-                <span className="text-[11px] font-bold tracking-wider text-emerald-600 uppercase">{t.totalCollected}</span>
-                <div className="text-2xl font-black text-emerald-600 mt-2">₹{totalCollected.toLocaleString()}</div>
-              </div>
-              <p className="text-[10px] text-slate-400 mt-2">Advance collected in cash/online</p>
-            </div>
-
-            <div className="bg-white p-5 rounded-xl border border-rose-200 shadow-sm flex flex-col justify-between">
-              <div>
-                <span className="text-[11px] font-bold tracking-wider text-rose-600 uppercase">{t.totalDue}</span>
-                <div className="text-2xl font-black text-rose-600 mt-2">₹{totalDue.toLocaleString()}</div>
-              </div>
-              <p className="text-[10px] text-slate-400 mt-2">To be collected at vehicle delivery</p>
-            </div>
-
-            <div className="bg-white p-5 rounded-xl border border-amber-200 shadow-sm flex flex-col justify-between">
-              <div>
-                <span className="text-[11px] font-bold tracking-wider text-amber-600 uppercase">{t.fleetStrength}</span>
-                <div className="text-2xl font-black text-slate-900 mt-2">{vehicles.length} Total</div>
-              </div>
-              <p className="text-[10px] text-slate-400 mt-2">
-                {vehicles.filter(v => v.is_active !== false).length} Active • {vehicles.filter(v => v.is_active === false).length} In Garage
-              </p>
-            </div>
-          </div>
-
-          {/* Visual Pie Charts Section */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col items-center">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">Collection vs Due Breakdown</h3>
-              <div className="h-44 w-full relative">
-                <canvas ref={revenueChartRef}></canvas>
-              </div>
-            </div>
-            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col items-center">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">Petrol vs EV Revenue Share</h3>
-              <div className="h-44 w-full relative">
-                <canvas ref={fleetChartRef}></canvas>
-              </div>
-            </div>
-          </div>
-
-          {/* Main Tab Content */}
           {loading ? (
-            <div className="p-12 text-center text-slate-400">Loading Fleet & Booking Data...</div>
-          ) : activeTab === 'timeline' ? (
-            <div>
-              {renderGrid(petrolVehicles, t.petrolGrid, 'petrol', 'bg-amber-100 text-amber-800')}
-              {renderGrid(evVehicles, t.evGrid, 'ev', 'bg-cyan-100 text-cyan-800')}
-            </div>
+            <div className="p-20 text-center text-slate-500 text-lg font-bold">Loading KD Captain Fleet ERP...</div>
           ) : (
-            /* Customer Database Tab */
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-8">
-              <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
-                <h2 className="text-base font-bold text-slate-800">📁 {t.tabCustomers}</h2>
-                <span className="text-xs font-semibold text-slate-500">Total: {validBookings.length}</span>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-xs">
-                  <thead>
-                    <tr className="bg-blue-100/70 text-blue-900 border-b border-blue-200 font-bold uppercase">
-                      <th className="p-3 w-12 text-center">SL</th>
-                      <th className="p-3">Customer Name</th>
-                      <th className="p-3">Contact</th>
-                      <th className="p-3">Vehicle Assigned</th>
-                      <th className="p-3">Period</th>
-                      <th className="p-3 text-right">Total Rent</th>
-                      <th className="p-3 text-right">Advance (উঠেছে)</th>
-                      <th className="p-3 text-right">Due (বাকি)</th>
-                      <th className="p-3 text-center">Security Dep.</th>
-                      <th className="p-3 text-center">ID Proof</th>
-                      <th className="p-3 text-center">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {validBookings.length === 0 ? (
-                      <tr>
-                        <td colSpan="11" className="p-8 text-center text-slate-400">No active customer bookings recorded yet.</td>
-                      </tr>
-                    ) : (
-                      validBookings.map((b, index) => {
-                        const veh = vehicles.find(v => v.id === b.vehicle_id);
-                        const due = Math.max(0, (b.total_rent || 0) - (b.advance_paid || 0));
-                        return (
-                          <tr key={b.id} className="hover:bg-slate-50 transition">
-                            <td className="p-3 text-center font-bold text-slate-400">{index + 1}</td>
-                            <td className="p-3 font-bold text-slate-800">{b.customer_name}</td>
-                            <td className="p-3">
-                              <div>{b.customer_phone}</div>
-                              <div className="text-[10px] text-emerald-600 font-medium">WA: {b.customer_whatsapp}</div>
-                            </td>
-                            <td className="p-3">
-                              <span className="font-semibold text-blue-700">{veh ? veh.model_name : 'Scooty'}</span>
-                              <span className="text-[10px] text-slate-400 block">{veh ? veh.vehicle_type.toUpperCase() : ''}</span>
-                            </td>
-                            <td className="p-3">
-                              <span className="font-medium text-slate-700">{b.start_date.slice(5)} to {b.end_date.slice(5)}</span>
-                            </td>
-                            <td className="p-3 text-right font-bold text-slate-900">₹{b.total_rent}</td>
-                            <td className="p-3 text-right font-bold text-emerald-600">₹{b.advance_paid}</td>
-                            <td className="p-3 text-right font-bold text-rose-600">₹{due}</td>
-                            <td className="p-3 text-center text-amber-700 font-semibold">{b.security_deposit ? `₹${b.security_deposit}` : 'N/A'}</td>
-                            <td className="p-3 text-center">{b.original_id_collected ? '✅ Yes' : '⏳ No'}</td>
-                            <td className="p-3 text-center">
-                              <div className="flex items-center justify-center gap-1.5">
-                                <button
-                                  onClick={() => sendWhatsAppInvoice(b, veh)}
-                                  className="p-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded transition"
-                                  title="WhatsApp Invoice"
-                                >
-                                  <i className="fa-brands fa-whatsapp text-sm"></i>
-                                </button>
-                                <button
-                                  onClick={() => setShowInvoiceModal({ booking: b, vehicle: veh || { model_name: 'Scooty', vehicle_type: 'petrol', registration_no: '' } })}
-                                  className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded transition"
-                                  title="Print Bill"
-                                >
-                                  <i className="fa-solid fa-print text-sm"></i>
-                                </button>
-                              </div>
-                            </td>
+            <div>
+              {/* TAB 1: REVENUE DASHBOARD */}
+              {activeTab === 'dashboard' && (
+                <div>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                    <div className="bg-white p-6 rounded-2xl border border-blue-200 shadow-sm">
+                      <span className="text-xs font-black tracking-wider text-blue-600 uppercase">{t.totalRevenue}</span>
+                      <div className="text-3xl font-black text-slate-900 mt-2">₹{totalRevenue.toLocaleString()}</div>
+                      <p className="text-xs text-slate-400 font-semibold mt-2">Aggregated from confirmed reservations</p>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-2xl border border-emerald-200 shadow-sm">
+                      <span className="text-xs font-black tracking-wider text-emerald-600 uppercase">{t.totalCollected}</span>
+                      <div className="text-3xl font-black text-emerald-600 mt-2">₹{totalCollected.toLocaleString()}</div>
+                      <p className="text-xs text-slate-400 font-semibold mt-2">Advance collected in cash/online</p>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-2xl border border-rose-200 shadow-sm">
+                      <span className="text-xs font-black tracking-wider text-rose-600 uppercase">{t.totalDue}</span>
+                      <div className="text-3xl font-black text-rose-600 mt-2">₹{totalDue.toLocaleString()}</div>
+                      <p className="text-xs text-slate-400 font-semibold mt-2">Payable upon vehicle pickup</p>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-2xl border border-amber-200 shadow-sm">
+                      <span className="text-xs font-black tracking-wider text-amber-600 uppercase">{t.fleetStrength}</span>
+                      <div className="text-3xl font-black text-slate-900 mt-2">{vehicles.length} Units</div>
+                      <p className="text-xs text-slate-400 font-semibold mt-2">
+                        {vehicles.filter(v => v.is_active !== false).length} Active • {vehicles.filter(v => v.is_active === false).length} In Garage
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col items-center">
+                      <h3 className="text-base font-black uppercase tracking-wider text-slate-800 mb-4">{t.collectionRatioTitle}</h3>
+                      <div className="h-64 w-full relative">
+                        <canvas ref={collectionChartRef}></canvas>
+                      </div>
+                    </div>
+                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col items-center">
+                      <h3 className="text-base font-black uppercase tracking-wider text-slate-800 mb-4">{t.fleetRatioTitle}</h3>
+                      <div className="h-64 w-full relative">
+                        <canvas ref={categoryChartRef}></canvas>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 2: TIMELINE */}
+              {activeTab === 'timeline' && (
+                <div>
+                  {renderGrid(petrolVehicles, t.petrolGrid, 'petrol', 'bg-amber-100 text-amber-900')}
+                  {renderGrid(evVehicles, t.evGrid, 'ev', 'bg-cyan-100 text-cyan-900')}
+                </div>
+              )}
+
+              {/* TAB 3: CUSTOMER DIRECTORY */}
+              {activeTab === 'customers' && (
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-10">
+                  <div className="px-8 py-5 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
+                    <h2 className="text-xl font-black text-slate-800">📁 {t.tabCustomers}</h2>
+                    <span className="text-sm font-black text-slate-500">Total Bookings: {validBookings.length}</span>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse text-xs">
+                      <thead>
+                        <tr className="bg-blue-100 text-blue-950 border-b border-blue-200 font-black uppercase">
+                          <th className="p-4 w-12 text-center">SL</th>
+                          <th className="p-4">Customer Name</th>
+                          <th className="p-4">Contact</th>
+                          <th className="p-4">Vehicle Assigned</th>
+                          <th className="p-4">Period & Slots</th>
+                          <th className="p-4 text-right">Total Rent</th>
+                          <th className="p-4 text-right">Advance (উঠেছে)</th>
+                          <th className="p-4 text-right">Due (বাকি)</th>
+                          <th className="p-4 text-center">Security Dep.</th>
+                          <th className="p-4 text-center">ID Proof</th>
+                          <th className="p-4 text-center">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {validBookings.length === 0 ? (
+                          <tr>
+                            <td colSpan="11" className="p-10 text-center text-slate-400 font-bold text-sm">No registered customer bookings found yet.</td>
                           </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                        ) : (
+                          validBookings.map((b, index) => {
+                            const veh = vehicles.find(v => v.id === b.vehicle_id);
+                            const due = Math.max(0, (b.total_rent || 0) - (b.advance_paid || 0));
+                            return (
+                              <tr key={b.id} className="hover:bg-slate-50 transition">
+                                <td className="p-4 text-center font-black text-slate-400">{index + 1}</td>
+                                <td className="p-4 font-black text-slate-900 text-sm">
+                                  <div>{b.customer_name}</div>
+                                  {b.customer_name_hi && lang === 'hi' && (
+                                    <div className="text-xs text-blue-600 font-semibold">{b.customer_name_hi}</div>
+                                  )}
+                                </td>
+                                <td className="p-4">
+                                  <div className="font-bold">{b.customer_phone}</div>
+                                  <div className="text-xs text-emerald-600 font-black">WA: {b.customer_whatsapp}</div>
+                                </td>
+                                <td className="p-4">
+                                  <span className="font-black text-blue-700 text-sm">{veh ? veh.model_name : 'Scooty'}</span>
+                                  <span className="text-xs text-slate-400 block font-bold">{veh ? veh.vehicle_type.toUpperCase() : ''}</span>
+                                </td>
+                                <td className="p-4">
+                                  <span className="font-bold text-slate-700 bg-slate-100 px-2 py-1 rounded border">
+                                    {formatSlotDates(b)}
+                                  </span>
+                                </td>
+                                <td className="p-4 text-right font-black text-slate-900 text-sm">₹{b.total_rent}</td>
+                                <td className="p-4 text-right font-black text-emerald-600 text-sm">₹{b.advance_paid}</td>
+                                <td className="p-4 text-right font-black text-rose-600 text-sm">₹{due}</td>
+                                <td className="p-4 text-center text-amber-700 font-black">{b.security_deposit ? `₹${b.security_deposit}` : 'N/A'}</td>
+                                <td className="p-4 text-center font-bold">{b.original_id_collected ? '✅ Yes' : '⏳ No'}</td>
+                                <td className="p-4 text-center">
+                                  <div className="flex items-center justify-center gap-2">
+                                    <button
+                                      onClick={() => sendWhatsAppInvoice(b, veh)}
+                                      className="p-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded-xl transition shadow-xs"
+                                      title="WhatsApp Invoice"
+                                    >
+                                      <i className="fa-brands fa-whatsapp text-base"></i>
+                                    </button>
+                                    <button
+                                      onClick={() => setShowInvoiceModal({ booking: b, vehicle: veh || { model_name: 'Scooty', vehicle_type: 'petrol', registration_no: '' } })}
+                                      className="p-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-xl transition shadow-xs"
+                                      title="Print Bill"
+                                    >
+                                      <i className="fa-solid fa-print text-base"></i>
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
-          {/* Modal: Slot Action Choice (Booking vs Maintenance) */}
+          {/* Modal: Slot Choice (Booking vs Maintenance) */}
           {showSlotActionModal && selectedSlot && (
-            <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-              <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6 border border-slate-200">
+            <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+              <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 border border-slate-200">
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-base font-bold text-slate-800">{selectedSlot.vehicle.model_name}</h3>
+                  <h3 className="text-lg font-black text-slate-900">{selectedSlot.vehicle.model_name}</h3>
                   <button onClick={() => setShowSlotActionModal(false)} className="text-slate-400 hover:text-slate-600">
-                    <i className="fa-solid fa-xmark text-lg"></i>
+                    <i className="fa-solid fa-xmark text-xl"></i>
                   </button>
                 </div>
-                <p className="text-xs text-slate-500 mb-5">Date Selected: <span className="font-bold text-blue-600">{selectedSlot.date}</span></p>
-                <div className="space-y-3">
+                <p className="text-xs text-slate-500 mb-6 font-bold">Selected Date: <span className="text-blue-600">{selectedSlot.date}</span></p>
+                <div className="space-y-4">
                   <button
                     onClick={() => { setShowSlotActionModal(false); setShowBookingModal(true); }}
-                    className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg text-xs flex items-center justify-center gap-2 shadow-sm transition"
+                    className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl text-xs flex items-center justify-center gap-2 shadow-md transition"
                   >
-                    <i className="fa-solid fa-user-plus"></i> New Customer Booking
+                    <i className="fa-solid fa-user-plus text-sm"></i> New Customer Booking
                   </button>
-                  <form onSubmit={handleMarkMaintenance} className="pt-3 border-t space-y-2">
-                    <span className="block text-[11px] font-bold text-amber-700">Block for Garage / Maintenance</span>
+                  <form onSubmit={handleMarkMaintenance} className="pt-4 border-t space-y-3">
+                    <span className="block text-xs font-black text-amber-800 uppercase tracking-wider">Block for Garage / Maintenance</span>
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div>
-                        <label className="text-[10px] text-slate-500">From</label>
+                        <label className="text-[10px] text-slate-500 font-bold">From</label>
                         <input
                           type="date"
                           value={maintenanceRange.start_date}
                           onChange={e => setMaintenanceRange({ ...maintenanceRange, start_date: e.target.value })}
-                          className="w-full p-1.5 border rounded"
+                          className="w-full p-2 border rounded-lg font-bold"
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] text-slate-500">To</label>
+                        <label className="text-[10px] text-slate-500 font-bold">To</label>
                         <input
                           type="date"
                           value={maintenanceRange.end_date}
                           onChange={e => setMaintenanceRange({ ...maintenanceRange, end_date: e.target.value })}
-                          className="w-full p-1.5 border rounded"
+                          className="w-full p-2 border rounded-lg font-bold"
                         />
                       </div>
                     </div>
                     <button
                       type="submit"
-                      className="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-lg text-xs transition"
+                      className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-black rounded-xl text-xs transition shadow-md"
                     >
-                      Confirm Garage Block
+                      Confirm Garage Lock
                     </button>
                   </form>
                 </div>
@@ -707,143 +809,180 @@
 
           {/* Modal: Add Vehicle */}
           {showAddVehicleModal && (
-            <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-              <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 border border-slate-200">
+            <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+              <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200">
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-base font-bold text-slate-800">Add New {vehicleTypeToAdd.toUpperCase()} Vehicle</h3>
+                  <h3 className="text-lg font-black text-slate-800 uppercase">Add New {vehicleTypeToAdd} Vehicle</h3>
                   <button onClick={() => setShowAddVehicleModal(false)} className="text-slate-400 hover:text-slate-600">
-                    <i className="fa-solid fa-xmark text-lg"></i>
+                    <i className="fa-solid fa-xmark text-xl"></i>
                   </button>
                 </div>
                 <form onSubmit={handleAddVehicle} className="space-y-4 text-xs">
                   <div>
-                    <label className="block font-medium text-slate-700 mb-1">Vehicle / Model Name</label>
+                    <label className="block font-black text-slate-700 mb-1">Vehicle / Model Name</label>
                     <input
                       required
                       placeholder="e.g. Activa 6G, Jupiter 125, Ola S1 Pro"
                       value={newVehicle.model_name}
                       onChange={e => setNewVehicle({ ...newVehicle, model_name: e.target.value })}
-                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                      className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-bold"
                     />
                   </div>
                   <div>
-                    <label className="block font-medium text-slate-700 mb-1">Registration No. (Optional)</label>
+                    <label className="block font-black text-slate-700 mb-1">Registration No. (Optional)</label>
                     <input
                       placeholder="e.g. WB-01-XXXX"
                       value={newVehicle.registration_no}
                       onChange={e => setNewVehicle({ ...newVehicle, registration_no: e.target.value })}
-                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                      className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-bold"
                     />
                   </div>
                   <div>
-                    <label className="block font-medium text-slate-700 mb-1">Daily Rent (₹)</label>
+                    <label className="block font-black text-slate-700 mb-1">Daily Rent (₹)</label>
                     <input
                       type="number"
                       required
                       placeholder="e.g. 800"
                       value={newVehicle.daily_rent}
                       onChange={e => setNewVehicle({ ...newVehicle, daily_rent: e.target.value })}
-                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                      className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-bold"
                     />
                   </div>
-                  <div className="flex justify-end gap-2 pt-2">
-                    <button type="button" onClick={() => setShowAddVehicleModal(false)} className="px-4 py-2 bg-slate-100 rounded-lg font-medium text-slate-600">Cancel</button>
-                    <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium shadow-sm hover:bg-blue-700">Save Vehicle</button>
+                  <div className="flex justify-end gap-2 pt-3">
+                    <button type="button" onClick={() => setShowAddVehicleModal(false)} className="px-4 py-2 bg-slate-100 rounded-xl font-bold text-slate-600">Cancel</button>
+                    <button type="submit" className="px-5 py-2 bg-blue-600 text-white rounded-xl font-black shadow-md hover:bg-blue-700">Save Vehicle</button>
                   </div>
                 </form>
               </div>
             </div>
           )}
 
-          {/* Modal: New Booking */}
+          {/* Modal: New Booking with Multi-Date Slot & Hindi Assist */}
           {showBookingModal && selectedSlot && (
-            <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-              <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 border border-slate-200">
+            <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
+              <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 border border-slate-200 my-8">
                 <div className="flex justify-between items-center mb-4">
                   <div>
-                    <h3 className="text-base font-bold text-slate-800">New Booking: {selectedSlot.vehicle.model_name}</h3>
-                    <p className="text-xs text-slate-500">{selectedSlot.vehicle.vehicle_type.toUpperCase()} | ₹{selectedSlot.vehicle.daily_rent}/day</p>
+                    <h3 className="text-lg font-black text-slate-900">New Booking: {selectedSlot.vehicle.model_name}</h3>
+                    <p className="text-xs text-slate-500 font-bold">{selectedSlot.vehicle.vehicle_type.toUpperCase()} | ₹{selectedSlot.vehicle.daily_rent}/day</p>
                   </div>
                   <button onClick={() => setShowBookingModal(false)} className="text-slate-400 hover:text-slate-600">
-                    <i className="fa-solid fa-xmark text-lg"></i>
+                    <i className="fa-solid fa-xmark text-xl"></i>
                   </button>
                 </div>
-                <form onSubmit={handleAddBooking} className="space-y-3 text-xs">
+                <form onSubmit={handleAddBooking} className="space-y-4 text-xs">
                   <div>
-                    <label className="block font-medium text-slate-700 mb-1">Customer Full Name</label>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="font-black text-slate-700">Customer Full Name</label>
+                      <button
+                        type="button"
+                        onClick={convertToHindiPhonetic}
+                        className="text-[10px] text-blue-600 hover:text-blue-800 font-bold flex items-center gap-1"
+                      >
+                        <i className="fa-solid fa-language"></i> {lang === 'hi' ? 'हिन्दी में नाम सेट करें' : 'Set Hindi Name'}
+                      </button>
+                    </div>
                     <input
                       required
-                      placeholder="Enter customer name"
+                      placeholder="Enter customer name in English or Hindi"
                       value={newBooking.customer_name}
                       onChange={e => setNewBooking({ ...newBooking, customer_name: e.target.value })}
-                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                      className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-bold"
                     />
                   </div>
+
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block font-medium text-slate-700 mb-1">Primary Phone</label>
+                      <label className="block font-black text-slate-700 mb-1">Primary Phone</label>
                       <input
                         required
                         placeholder="Phone number"
                         value={newBooking.customer_phone}
                         onChange={e => setNewBooking({ ...newBooking, customer_phone: e.target.value })}
-                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                        className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-bold"
                       />
                     </div>
                     <div>
-                      <label className="block font-medium text-slate-700 mb-1">WhatsApp Number</label>
+                      <label className="block font-black text-slate-700 mb-1">WhatsApp Number</label>
                       <input
                         required
                         placeholder="WhatsApp number"
                         value={newBooking.customer_whatsapp}
                         onChange={e => setNewBooking({ ...newBooking, customer_whatsapp: e.target.value })}
-                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block font-medium text-slate-700 mb-1">Start Date</label>
-                      <input
-                        type="date"
-                        required
-                        value={newBooking.start_date}
-                        onChange={e => {
-                          const val = e.target.value;
-                          setNewBooking(prev => ({ ...prev, start_date: val }));
-                          autoCalculateAmounts(val, newBooking.end_date, newBooking.advance_paid, selectedSlot.vehicle.daily_rent);
-                        }}
-                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block font-medium text-slate-700 mb-1">End Date</label>
-                      <input
-                        type="date"
-                        required
-                        value={newBooking.end_date}
-                        onChange={e => {
-                          const val = e.target.value;
-                          setNewBooking(prev => ({ ...prev, end_date: val }));
-                          autoCalculateAmounts(newBooking.start_date, val, newBooking.advance_paid, selectedSlot.vehicle.daily_rent);
-                        }}
-                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                        className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-bold"
                       />
                     </div>
                   </div>
 
+                  {/* Multi-Date Slot Container */}
+                  <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="font-black text-slate-800 uppercase tracking-wide text-[11px]">
+                        📅 Rental Date Slots
+                      </span>
+                      <button
+                        type="button"
+                        onClick={addDateSlot}
+                        className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-800 px-2.5 py-1 rounded-lg font-bold transition flex items-center gap-1"
+                      >
+                        <i className="fa-solid fa-plus"></i> Add More Dates
+                      </button>
+                    </div>
+
+                    {newBooking.slots.map((slot, sIdx) => (
+                      <div key={sIdx} className="bg-white p-2.5 rounded-lg border border-slate-200 relative">
+                        <div className="flex justify-between items-center mb-1 text-[10px] font-bold text-slate-400">
+                          <span>SLOT #{sIdx + 1}</span>
+                          {newBooking.slots.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeDateSlot(sIdx)}
+                              className="text-rose-500 hover:text-rose-700"
+                              title="Remove slot"
+                            >
+                              <i className="fa-solid fa-trash-can"></i>
+                            </button>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="text-[10px] font-bold text-slate-500">Start Date</label>
+                            <input
+                              type="date"
+                              required
+                              value={slot.start_date}
+                              onChange={e => handleSlotChange(sIdx, 'start_date', e.target.value)}
+                              className="w-full p-1.5 border rounded-md font-bold text-xs"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] font-bold text-slate-500">End Date</label>
+                            <input
+                              type="date"
+                              required
+                              value={slot.end_date}
+                              onChange={e => handleSlotChange(sIdx, 'end_date', e.target.value)}
+                              className="w-full p-1.5 border rounded-md font-bold text-xs"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Auto-Calculated Amounts */}
                   <div className="grid grid-cols-3 gap-3">
                     <div>
-                      <label className="block font-medium text-slate-700 mb-1">Total Rent (Auto)</label>
+                      <label className="block font-black text-slate-700 mb-1">Total Rent (Auto)</label>
                       <input
                         type="number"
                         readOnly
                         value={newBooking.total_rent}
-                        className="w-full px-3 py-2 border rounded-lg bg-blue-50 font-bold text-blue-700 outline-none cursor-not-allowed"
+                        className="w-full px-3 py-2 border rounded-xl bg-blue-50 font-black text-blue-700 outline-none cursor-not-allowed text-sm"
                       />
                     </div>
                     <div>
-                      <label className="block font-medium text-slate-700 mb-1">Advance Paid (উঠেছে)</label>
+                      <label className="block font-black text-slate-700 mb-1">Advance (উঠেছে)</label>
                       <input
                         type="number"
                         placeholder="e.g. 1000"
@@ -857,28 +996,28 @@
                             due_amount: Math.max(0, (prev.total_rent || 0) - adv)
                           }));
                         }}
-                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 font-bold text-emerald-700 outline-none"
+                        className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-emerald-500 font-black text-emerald-700 outline-none text-sm"
                       />
                     </div>
                     <div>
-                      <label className="block font-medium text-slate-700 mb-1">Due Amount (বাকি)</label>
+                      <label className="block font-black text-slate-700 mb-1">Due Amount (বাকি)</label>
                       <input
                         type="number"
                         readOnly
                         value={newBooking.due_amount}
-                        className="w-full px-3 py-2 border rounded-lg bg-rose-50 font-bold text-rose-700 outline-none cursor-not-allowed"
+                        className="w-full px-3 py-2 border rounded-xl bg-rose-50 font-black text-rose-700 outline-none cursor-not-allowed text-sm"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block font-medium text-slate-700 mb-1">Security Deposit (₹) <span className="text-slate-400 font-normal">(Optional)</span></label>
+                    <label className="block font-black text-slate-700 mb-1">Security Deposit (₹) <span className="text-slate-400 font-normal">(Optional)</span></label>
                     <input
                       type="number"
                       placeholder="Leave empty or enter amount (e.g. 1000)"
                       value={newBooking.security_deposit}
                       onChange={e => setNewBooking({ ...newBooking, security_deposit: e.target.value })}
-                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-amber-500 outline-none"
+                      className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-amber-500 outline-none font-bold"
                     />
                   </div>
 
@@ -890,12 +1029,12 @@
                       onChange={e => setNewBooking({ ...newBooking, original_id_collected: e.target.checked })}
                       className="rounded text-blue-600"
                     />
-                    <label htmlFor="origId" className="text-slate-700">Original ID Proof collected</label>
+                    <label htmlFor="origId" className="text-slate-700 font-bold">Original ID Proof collected</label>
                   </div>
 
                   <div className="flex justify-end gap-2 pt-3">
-                    <button type="button" onClick={() => setShowBookingModal(false)} className="px-4 py-2 bg-slate-100 rounded-lg font-medium text-slate-600">Cancel</button>
-                    <button type="submit" className="px-4 py-2 bg-emerald-600 text-white rounded-lg font-medium shadow-sm hover:bg-emerald-700">Confirm Booking</button>
+                    <button type="button" onClick={() => setShowBookingModal(false)} className="px-4 py-2 bg-slate-100 rounded-xl font-bold text-slate-600">Cancel</button>
+                    <button type="submit" className="px-5 py-2 bg-emerald-600 text-white rounded-xl font-black shadow-md hover:bg-emerald-700">Confirm Booking</button>
                   </div>
                 </form>
               </div>
@@ -904,72 +1043,72 @@
 
           {/* Modal: View Booking Details */}
           {selectedBookingDetail && (
-            <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-              <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 border border-slate-200">
+            <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+              <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200">
                 <div className="flex justify-between items-center mb-4 pb-2 border-b">
-                  <h3 className="text-base font-bold text-slate-800">Booking Summary</h3>
+                  <h3 className="text-lg font-black text-slate-900">Booking Summary</h3>
                   <button onClick={() => setSelectedBookingDetail(null)} className="text-slate-400 hover:text-slate-600">
-                    <i className="fa-solid fa-xmark text-lg"></i>
+                    <i className="fa-solid fa-xmark text-xl"></i>
                   </button>
                 </div>
-                <div className="space-y-2.5 text-xs text-slate-700">
+                <div className="space-y-3 text-xs text-slate-700">
                   <div className="flex justify-between py-1 border-b border-slate-100">
-                    <span className="text-slate-500">Customer Name:</span>
-                    <span className="font-bold">{selectedBookingDetail.booking.customer_name}</span>
+                    <span className="text-slate-500 font-bold">Customer Name:</span>
+                    <span className="font-black text-slate-900 text-sm">{selectedBookingDetail.booking.customer_name}</span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-slate-100">
-                    <span className="text-slate-500">Contact Number:</span>
-                    <span>{selectedBookingDetail.booking.customer_phone}</span>
+                    <span className="text-slate-500 font-bold">Contact Number:</span>
+                    <span className="font-bold">{selectedBookingDetail.booking.customer_phone}</span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-slate-100">
-                    <span className="text-slate-500">WhatsApp:</span>
-                    <span>{selectedBookingDetail.booking.customer_whatsapp}</span>
+                    <span className="text-slate-500 font-bold">WhatsApp:</span>
+                    <span className="font-black text-emerald-600">{selectedBookingDetail.booking.customer_whatsapp}</span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-slate-100">
-                    <span className="text-slate-500">Vehicle Assigned:</span>
-                    <span className="font-semibold text-blue-700">{selectedBookingDetail.vehicle.model_name}</span>
+                    <span className="text-slate-500 font-bold">Vehicle Assigned:</span>
+                    <span className="font-black text-blue-700 text-sm">{selectedBookingDetail.vehicle.model_name}</span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-slate-100">
-                    <span className="text-slate-500">Booking Period:</span>
-                    <span className="font-medium text-blue-600">{selectedBookingDetail.booking.start_date} to {selectedBookingDetail.booking.end_date}</span>
+                    <span className="text-slate-500 font-bold">Booked Dates:</span>
+                    <span className="font-black text-blue-600">{formatSlotDates(selectedBookingDetail.booking)}</span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-slate-100">
-                    <span className="text-slate-500">Total Rental Charge:</span>
-                    <span className="font-bold">₹{selectedBookingDetail.booking.total_rent}</span>
+                    <span className="text-slate-500 font-bold">Total Rental Charge:</span>
+                    <span className="font-black text-slate-900 text-sm">₹{selectedBookingDetail.booking.total_rent}</span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-slate-100">
-                    <span className="text-slate-500">Advance Paid (উঠেছে):</span>
-                    <span className="font-bold text-emerald-600">₹{selectedBookingDetail.booking.advance_paid}</span>
+                    <span className="text-slate-500 font-bold">Advance Paid (উঠেছে):</span>
+                    <span className="font-black text-emerald-600 text-sm">₹{selectedBookingDetail.booking.advance_paid}</span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-slate-100">
-                    <span className="text-slate-500">Remaining Balance (বাকি):</span>
-                    <span className="font-bold text-rose-600">₹{Math.max(0, (selectedBookingDetail.booking.total_rent || 0) - (selectedBookingDetail.booking.advance_paid || 0))}</span>
+                    <span className="text-slate-500 font-bold">Remaining Balance (বাকি):</span>
+                    <span className="font-black text-rose-600 text-sm">₹{Math.max(0, (selectedBookingDetail.booking.total_rent || 0) - (selectedBookingDetail.booking.advance_paid || 0))}</span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-slate-100">
-                    <span className="text-slate-500">Security Deposit:</span>
-                    <span className="font-bold text-amber-600">{selectedBookingDetail.booking.security_deposit ? `₹${selectedBookingDetail.booking.security_deposit}` : 'N/A'}</span>
+                    <span className="text-slate-500 font-bold">Security Deposit:</span>
+                    <span className="font-black text-amber-600">{selectedBookingDetail.booking.security_deposit ? `₹${selectedBookingDetail.booking.security_deposit}` : 'N/A'}</span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-slate-100">
-                    <span className="text-slate-500">Original ID Submitted:</span>
-                    <span>{selectedBookingDetail.booking.original_id_collected ? '✅ Yes' : '⏳ Pending'}</span>
+                    <span className="text-slate-500 font-bold">Original ID Submitted:</span>
+                    <span className="font-bold">{selectedBookingDetail.booking.original_id_collected ? '✅ Yes' : '⏳ Pending'}</span>
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-2 pt-5">
+                <div className="flex flex-col gap-2.5 pt-6">
                   <button
                     onClick={() => sendWhatsAppInvoice(selectedBookingDetail.booking, selectedBookingDetail.vehicle)}
-                    className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg text-xs flex items-center justify-center gap-2 shadow-sm transition"
+                    className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl text-xs flex items-center justify-center gap-2 shadow-md transition"
                   >
-                    <i className="fa-brands fa-whatsapp text-sm"></i> Send WhatsApp Confirmation
+                    <i className="fa-brands fa-whatsapp text-base"></i> Send WhatsApp Confirmation
                   </button>
                   <button
                     onClick={() => {
                       setShowInvoiceModal(selectedBookingDetail);
                       setSelectedBookingDetail(null);
                     }}
-                    className="w-full py-2 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-lg text-xs flex items-center justify-center gap-2 shadow-sm transition"
+                    className="w-full py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-black rounded-xl text-xs flex items-center justify-center gap-2 shadow-md transition"
                   >
-                    <i className="fa-solid fa-file-invoice text-sm"></i> View / Print Official Bill
+                    <i className="fa-solid fa-file-invoice text-base"></i> View / Print Official Bill
                   </button>
                 </div>
               </div>
@@ -979,93 +1118,93 @@
           {/* Modal: Printable Invoice */}
           {showInvoiceModal && (
             <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
-              <div className="bg-white rounded-xl shadow-2xl max-w-xl w-full p-8 border border-slate-200">
+              <div className="bg-white rounded-2xl shadow-2xl max-w-xl w-full p-8 border border-slate-200">
                 <div id="printable-invoice" className="text-slate-800 text-xs">
                   {/* Bill Header */}
                   <div className="border-b-2 border-slate-800 pb-4 mb-4 flex justify-between items-start">
                     <div>
-                      <h1 className="text-xl font-black tracking-tight text-slate-900">KD CAPTAIN</h1>
-                      <p className="text-[10px] text-slate-500">Two-Wheeler Rental Service | Durga Puja 2026</p>
-                      <p className="text-[10px] text-slate-500">Kolkata / Delhi</p>
+                      <h1 className="text-2xl font-black tracking-tight text-slate-900">KD CAPTAIN</h1>
+                      <p className="text-xs text-slate-500 font-bold">Two-Wheeler Rental Service | Durga Puja 2026</p>
+                      <p className="text-xs text-slate-500 font-bold">Kolkata / Delhi</p>
                     </div>
                     <div className="text-right">
-                      <div className="text-base font-bold text-slate-700">RENTAL RECEIPT</div>
-                      <div className="text-[10px] text-slate-400">Date: {new Date().toLocaleDateString()}</div>
+                      <div className="text-lg font-black text-slate-800">RENTAL RECEIPT</div>
+                      <div className="text-xs text-slate-400 font-semibold">Date: {new Date().toLocaleDateString()}</div>
                     </div>
                   </div>
 
                   {/* Customer & Vehicle Details */}
-                  <div className="grid grid-cols-2 gap-4 mb-4 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                  <div className="grid grid-cols-2 gap-4 mb-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
                     <div>
-                      <div className="text-[10px] uppercase font-bold text-slate-400">Customer Details</div>
-                      <div className="font-bold text-slate-800">{showInvoiceModal.booking.customer_name}</div>
-                      <div>Phone: {showInvoiceModal.booking.customer_phone}</div>
-                      <div>WhatsApp: {showInvoiceModal.booking.customer_whatsapp}</div>
+                      <div className="text-[10px] uppercase font-black text-slate-400 tracking-wider">Customer Details</div>
+                      <div className="font-black text-slate-900 text-sm mt-1">{showInvoiceModal.booking.customer_name}</div>
+                      <div className="font-bold">Phone: {showInvoiceModal.booking.customer_phone}</div>
+                      <div className="font-bold">WhatsApp: {showInvoiceModal.booking.customer_whatsapp}</div>
                     </div>
                     <div>
-                      <div className="text-[10px] uppercase font-bold text-slate-400">Vehicle Assigned</div>
-                      <div className="font-bold text-slate-800">{showInvoiceModal.vehicle.model_name}</div>
-                      <div>Type: {showInvoiceModal.vehicle.vehicle_type.toUpperCase()}</div>
-                      <div>Reg No: {showInvoiceModal.vehicle.registration_no || 'TBA'}</div>
+                      <div className="text-[10px] uppercase font-black text-slate-400 tracking-wider">Vehicle Assigned</div>
+                      <div className="font-black text-blue-700 text-sm mt-1">{showInvoiceModal.vehicle.model_name}</div>
+                      <div className="font-bold">Type: {showInvoiceModal.vehicle.vehicle_type.toUpperCase()}</div>
+                      <div className="font-bold">Reg No: {showInvoiceModal.vehicle.registration_no || 'TBA'}</div>
                     </div>
                   </div>
 
-                  {/* Rental Schedule & Pricing */}
+                  {/* Pricing Breakdown */}
                   <table className="w-full mb-4 border-collapse">
                     <thead>
-                      <tr className="border-b border-slate-200 text-slate-500 text-[10px] uppercase">
+                      <tr className="border-b border-slate-200 text-slate-500 text-[10px] uppercase font-black">
                         <th className="py-2 text-left">Description</th>
                         <th className="py-2 text-right">Amount</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 font-medium">
+                    <tbody className="divide-y divide-slate-100 font-bold">
                       <tr>
-                        <td className="py-2">Booking Period: {showInvoiceModal.booking.start_date} to {showInvoiceModal.booking.end_date}</td>
-                        <td className="py-2 text-right">₹{showInvoiceModal.booking.total_rent}</td>
+                        <td className="py-2.5">Rental Slots: {formatSlotDates(showInvoiceModal.booking)}</td>
+                        <td className="py-2.5 text-right font-black">₹{showInvoiceModal.booking.total_rent}</td>
                       </tr>
                       <tr>
-                        <td className="py-2 text-slate-500">Advance Paid (Collected)</td>
-                        <td className="py-2 text-right text-emerald-600">- ₹{showInvoiceModal.booking.advance_paid || 0}</td>
+                        <td className="py-2.5 text-slate-500">Advance Paid (Collected)</td>
+                        <td className="py-2.5 text-right text-emerald-600 font-black">- ₹{showInvoiceModal.booking.advance_paid || 0}</td>
                       </tr>
                       {showInvoiceModal.booking.security_deposit > 0 && (
                         <tr>
-                          <td className="py-2 text-slate-500">Security Deposit (Refundable)</td>
-                          <td className="py-2 text-right text-amber-600">₹{showInvoiceModal.booking.security_deposit}</td>
+                          <td className="py-2.5 text-slate-500">Security Deposit (Refundable)</td>
+                          <td className="py-2.5 text-right text-amber-600 font-black">₹{showInvoiceModal.booking.security_deposit}</td>
                         </tr>
                       )}
-                      <tr className="font-bold text-slate-900 border-t border-slate-300">
-                        <td className="py-2">Remaining Rent to Pay (Due at Handover)</td>
-                        <td className="py-2 text-right text-rose-600">₹{Math.max(0, (showInvoiceModal.booking.total_rent || 0) - (showInvoiceModal.booking.advance_paid || 0))}</td>
+                      <tr className="font-black text-slate-900 border-t border-slate-300 text-sm">
+                        <td className="py-2.5">Remaining Rent to Pay (Due at Handover)</td>
+                        <td className="py-2.5 text-right text-rose-600">₹{Math.max(0, (showInvoiceModal.booking.total_rent || 0) - (showInvoiceModal.booking.advance_paid || 0))}</td>
                       </tr>
                     </tbody>
                   </table>
 
                   {/* Mandatory Terms & Conditions in English */}
-                  <div className="border border-slate-200 rounded-lg p-3 bg-slate-50 space-y-1.5 text-[10px] text-slate-600 leading-relaxed mb-6">
-                    <div className="font-bold text-slate-800 mb-1">TERMS & CONDITIONS:</div>
+                  <div className="border border-slate-200 rounded-xl p-4 bg-slate-50 space-y-2 text-[11px] text-slate-600 leading-relaxed mb-6 font-medium">
+                    <div className="font-black text-slate-900 text-xs mb-1">TERMS & CONDITIONS:</div>
                     {showInvoiceModal.booking.security_deposit > 0 && (
-                      <div>1. <strong>Security Deposit:</strong> A security deposit of ₹{showInvoiceModal.booking.security_deposit} is held for the duration of the rental. It will be 100% refunded upon the safe return of the vehicle without any damages.</div>
+                      <div>1. <strong>Security Deposit:</strong> A security deposit of ₹{showInvoiceModal.booking.security_deposit} is held for the duration of the rental. It will be 100% refunded upon the safe return of the vehicle without damages.</div>
                     )}
                     <div>2. <strong>Payment Settlement:</strong> The due balance must be fully cleared before the keys are handed over on the pickup date.</div>
                     <div>3. <strong>Identity Proof:</strong> Submission of an Original Government Identity Proof is mandatory at the time of vehicle pickup for verification and security records.</div>
                     <div>4. <strong>Safe Operation:</strong> The hirer is fully liable for any traffic fines, speed violations, or accidental damage incurred during the rental tenure.</div>
                   </div>
 
-                  <div className="flex justify-between items-end pt-4 border-t border-slate-200 text-[10px]">
+                  <div className="flex justify-between items-end pt-4 border-t border-slate-200 text-xs font-bold">
                     <div>
                       <p className="text-slate-400">Authorized Signature</p>
-                      <p className="font-bold mt-4">KD Captain Management</p>
+                      <p className="font-black mt-4">KD Captain Management</p>
                     </div>
                     <div>
                       <p className="text-slate-400">Customer Signature</p>
-                      <p className="font-bold mt-4">_______________________</p>
+                      <p className="font-black mt-4">_______________________</p>
                     </div>
                   </div>
                 </div>
 
                 <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-slate-200">
-                  <button onClick={() => setShowInvoiceModal(null)} className="px-4 py-2 bg-slate-100 rounded-lg text-xs font-medium text-slate-600">Close</button>
-                  <button onClick={() => window.print()} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-medium shadow-sm hover:bg-blue-700 flex items-center gap-1.5">
+                  <button onClick={() => setShowInvoiceModal(null)} className="px-5 py-2.5 bg-slate-100 rounded-xl text-xs font-bold text-slate-600">Close</button>
+                  <button onClick={() => window.print()} className="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-black shadow-md hover:bg-blue-700 flex items-center gap-2">
                     <i className="fa-solid fa-print"></i> Print Bill (PDF)
                   </button>
                 </div>
