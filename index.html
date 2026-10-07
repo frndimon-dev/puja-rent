@@ -106,13 +106,12 @@
       const t = TRANSLATIONS[lang];
 
       const [activeTab, setActiveTab] = useState('timeline');
-      const [activeDashboardFleet, setActiveDashboardFleet] = useState('petrol'); // 'petrol' or 'ev'
+      const [activeDashboardFleet, setActiveDashboardFleet] = useState('petrol');
 
       const [vehicles, setVehicles] = useState([]);
       const [bookings, setBookings] = useState([]);
       const [loading, setLoading] = useState(true);
 
-      // Local storage map for garage status (database schema safe)
       const [garageMap, setGarageMap] = useState(() => {
         try {
           return JSON.parse(localStorage.getItem('kd_garage_map') || '{}');
@@ -128,10 +127,8 @@
       const [selectedBookingDetail, setSelectedBookingDetail] = useState(null);
       const [showInvoiceModal, setShowInvoiceModal] = useState(null);
 
-      // Vehicle Form (No daily rent needed)
+      // Forms
       const [newVehicle, setNewVehicle] = useState({ model_name: '', vehicle_type: 'petrol', registration_no: '' });
-      
-      // Dynamic Rate Booking Form State
       const [editingBookingId, setEditingBookingId] = useState(null);
       const [newBooking, setNewBooking] = useState({
         customer_name: '',
@@ -150,7 +147,6 @@
 
       const [maintenanceRange, setMaintenanceRange] = useState({ start_date: '', end_date: '' });
 
-      // Chart Refs for Dedicated Petrol and EV charts
       const petrolChartRef = useRef(null);
       const evChartRef = useRef(null);
       const petrolChartInstance = useRef(null);
@@ -179,10 +175,9 @@
         localStorage.setItem('kd_garage_map', JSON.stringify(nextMap));
       };
 
-      // SEPARATE FLEET FINANCIAL METRICS
+      // Financials
       const validBookings = bookings.filter(b => b.booking_status !== 'maintenance');
 
-      // Petrol Fleet Calculations
       const petrolVehicles = vehicles.filter(v => v.vehicle_type === 'petrol');
       const petrolBookings = validBookings.filter(b => {
         const v = vehicles.find(veh => veh.id === b.vehicle_id);
@@ -192,7 +187,6 @@
       const petrolCollected = petrolBookings.reduce((acc, b) => acc + (parseFloat(b.advance_paid) || 0), 0);
       const petrolDue = Math.max(0, petrolRevenue - petrolCollected);
 
-      // EV Fleet Calculations
       const evVehicles = vehicles.filter(v => v.vehicle_type === 'ev');
       const evBookings = validBookings.filter(b => {
         const v = vehicles.find(veh => veh.id === b.vehicle_id);
@@ -202,11 +196,10 @@
       const evCollected = evBookings.reduce((acc, b) => acc + (parseFloat(b.advance_paid) || 0), 0);
       const evDue = Math.max(0, evRevenue - evCollected);
 
-      // Render Dedicated Charts
+      // Render Charts
       useEffect(() => {
         if (loading || activeTab !== 'dashboard') return;
 
-        // Petrol Dedicated Chart
         if (activeDashboardFleet === 'petrol' && petrolChartRef.current) {
           if (petrolChartInstance.current) petrolChartInstance.current.destroy();
           const ctx = petrolChartRef.current.getContext('2d');
@@ -229,7 +222,6 @@
           });
         }
 
-        // EV Dedicated Chart
         if (activeDashboardFleet === 'ev' && evChartRef.current) {
           if (evChartInstance.current) evChartInstance.current.destroy();
           const ctx = evChartRef.current.getContext('2d');
@@ -253,7 +245,6 @@
         }
       }, [bookings, vehicles, loading, activeTab, activeDashboardFleet, lang]);
 
-      // Calculate Total Days & Rent for Dynamic Per Day Rate
       const calculateAmounts = (slots, rate, advance) => {
         let totalDays = 0;
         slots.forEach(slot => {
@@ -308,13 +299,14 @@
         });
       };
 
-      // Add Vehicle
+      // Add Vehicle with Schema-Safe daily_rent: 0
       const handleAddVehicle = async (e) => {
         e.preventDefault();
         const payload = {
           model_name: newVehicle.model_name,
           vehicle_type: vehicleTypeToAdd,
-          registration_no: newVehicle.registration_no || ''
+          registration_no: newVehicle.registration_no || '',
+          daily_rent: 0
         };
 
         const { error } = await supabase.from('vehicles').insert([payload]);
@@ -336,7 +328,6 @@
         }
       };
 
-      // Save or Update Booking
       const handleSaveBooking = async (e) => {
         e.preventDefault();
         const firstSlot = newBooking.slots[0];
@@ -374,7 +365,6 @@
         }
       };
 
-      // Open Edit Booking Modal
       const openEditBooking = (booking, vehicle) => {
         setSelectedSlot({ vehicle, date: booking.start_date });
         setEditingBookingId(booking.id);
@@ -657,7 +647,6 @@
               {/* TAB 1: 100% SEPARATE PETROL & EV DASHBOARD */}
               {activeTab === 'dashboard' && (
                 <div>
-                  {/* Fleet Switcher for Dedicated Dashboards */}
                   <div className="flex items-center gap-4 mb-6">
                     <button
                       onClick={() => setActiveDashboardFleet('petrol')}
@@ -673,7 +662,6 @@
                     </button>
                   </div>
 
-                  {/* DEDICATED PETROL DASHBOARD */}
                   {activeDashboardFleet === 'petrol' && (
                     <div>
                       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -704,7 +692,6 @@
                         </div>
                       </div>
 
-                      {/* Pure Petrol Pie Chart */}
                       <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm max-w-xl mx-auto flex flex-col items-center mb-10">
                         <h3 className="text-base font-black uppercase tracking-wider text-slate-800 mb-4">⛽ Petrol: Collection vs Due Ratio</h3>
                         <div className="h-64 w-full relative">
@@ -714,7 +701,6 @@
                     </div>
                   )}
 
-                  {/* DEDICATED EV DASHBOARD */}
                   {activeDashboardFleet === 'ev' && (
                     <div>
                       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -745,7 +731,6 @@
                         </div>
                       </div>
 
-                      {/* Pure EV Pie Chart */}
                       <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm max-w-xl mx-auto flex flex-col items-center mb-10">
                         <h3 className="text-base font-black uppercase tracking-wider text-slate-800 mb-4">⚡ EV: Collection vs Due Ratio</h3>
                         <div className="h-64 w-full relative">
@@ -765,7 +750,7 @@
                 </div>
               )}
 
-              {/* TAB 3: CUSTOMER DIRECTORY (With Edit Option) */}
+              {/* TAB 3: CUSTOMER DIRECTORY */}
               {activeTab === 'customers' && (
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-10">
                   <div className="px-8 py-5 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
@@ -863,7 +848,7 @@
             </div>
           )}
 
-          {/* Modal: Slot Choice (Booking vs Maintenance) */}
+          {/* Modal: Slot Choice */}
           {showSlotActionModal && selectedSlot && (
             <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
               <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 border border-slate-200">
@@ -1243,7 +1228,6 @@
             <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
               <div className="bg-white rounded-2xl shadow-2xl max-w-xl w-full p-8 border border-slate-200">
                 <div id="printable-invoice" className="text-slate-800 text-xs">
-                  {/* Bill Header */}
                   <div className="border-b-2 border-slate-800 pb-4 mb-4 flex justify-between items-start">
                     <div>
                       <h1 className="text-2xl font-black tracking-tight text-slate-900">KD CAPTAIN</h1>
@@ -1256,7 +1240,6 @@
                     </div>
                   </div>
 
-                  {/* Customer & Vehicle Details */}
                   <div className="grid grid-cols-2 gap-4 mb-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
                     <div>
                       <div className="text-[10px] uppercase font-black text-slate-400 tracking-wider">Customer Details</div>
@@ -1272,7 +1255,6 @@
                     </div>
                   </div>
 
-                  {/* Pricing Breakdown */}
                   <table className="w-full mb-4 border-collapse">
                     <thead>
                       <tr className="border-b border-slate-200 text-slate-500 text-[10px] uppercase font-black">
@@ -1302,7 +1284,6 @@
                     </tbody>
                   </table>
 
-                  {/* Mandatory Terms & Conditions in English */}
                   <div className="border border-slate-200 rounded-xl p-4 bg-slate-50 space-y-2 text-[11px] text-slate-600 leading-relaxed mb-6 font-medium">
                     <div className="font-black text-slate-900 text-xs mb-1">TERMS & CONDITIONS:</div>
                     {showInvoiceModal.booking.security_deposit > 0 && (
