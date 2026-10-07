@@ -38,7 +38,7 @@
     const SUPABASE_KEY = "sb_publishable_HRMQgDnzbWgKC2ocml3T5A_DrMQhE3Q";
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // Live Puja 2026 Schedule starting from 08 Oct with 5-Color Repeating Scheme
+    // Live Durga Puja 2026 Schedule starting from 08 Oct with 5-Color Repeating Scheme
     const PUJA_SCHEDULE = [
       { date: "2026-10-08", label: "Today / Pre-Puja", colorClass: "text-indigo-700 bg-indigo-50 border-indigo-200" },
       { date: "2026-10-09", label: "Pre-Puja", colorClass: "text-emerald-700 bg-emerald-50 border-emerald-200" },
@@ -74,13 +74,10 @@
         addEv: "+ Add EV Scooty",
         vehicle: "Vehicle / Model",
         action: "Action",
-        active: "ACTIVE",
         inGarage: "IN GARAGE",
         garage: "GARAGE",
         booked: "BOOKED",
-        available: "AVAILABLE",
-        collectionRatioTitle: "Revenue Collection vs Due Balance",
-        fleetRatioTitle: "Petrol vs EV Earnings Share"
+        available: "AVAILABLE"
       },
       hi: {
         tagline: "दुर्गा पूजा 2026 फ्लीट और रेवेन्यू ईआरपी (कोलकाता / दिल्ली)",
@@ -97,13 +94,10 @@
         addEv: "+ ईवी गाड़ी जोड़ें",
         vehicle: "गाड़ी / मॉडल",
         action: "कार्रवाई",
-        active: "चालू है",
         inGarage: "गैराज में है",
         garage: "गैराज",
         booked: "बुक है",
-        available: "खाली है",
-        collectionRatioTitle: "कुल जमा बनाम बाकी बैलेंस",
-        fleetRatioTitle: "पेट्रोल बनाम ईवी कमाई शेयर"
+        available: "खाली है"
       }
     };
 
@@ -112,6 +106,8 @@
       const t = TRANSLATIONS[lang];
 
       const [activeTab, setActiveTab] = useState('timeline');
+      const [activeDashboardFleet, setActiveDashboardFleet] = useState('petrol'); // 'petrol' or 'ev'
+
       const [vehicles, setVehicles] = useState([]);
       const [bookings, setBookings] = useState([]);
       const [loading, setLoading] = useState(true);
@@ -132,17 +128,17 @@
       const [selectedBookingDetail, setSelectedBookingDetail] = useState(null);
       const [showInvoiceModal, setShowInvoiceModal] = useState(null);
 
-      // New Vehicle Form (No daily rent needed)
+      // Vehicle Form (No daily rent needed)
       const [newVehicle, setNewVehicle] = useState({ model_name: '', vehicle_type: 'petrol', registration_no: '' });
       
-      // Booking Form State (With Booking Date & Dynamic Rate)
+      // Dynamic Rate Booking Form State
       const [editingBookingId, setEditingBookingId] = useState(null);
       const [newBooking, setNewBooking] = useState({
         customer_name: '',
         customer_name_hi: '',
         customer_phone: '',
         customer_whatsapp: '',
-        booking_date: new Date().toISOString().split('T')[0],
+        booking_date: '2026-10-08',
         daily_rate: '800',
         slots: [{ start_date: '2026-10-08', end_date: '2026-10-08' }],
         total_rent: 800,
@@ -154,11 +150,11 @@
 
       const [maintenanceRange, setMaintenanceRange] = useState({ start_date: '', end_date: '' });
 
-      // Chart Refs
-      const collectionChartRef = useRef(null);
-      const categoryChartRef = useRef(null);
-      const collectionChartInstance = useRef(null);
-      const categoryChartInstance = useRef(null);
+      // Chart Refs for Dedicated Petrol and EV charts
+      const petrolChartRef = useRef(null);
+      const evChartRef = useRef(null);
+      const petrolChartInstance = useRef(null);
+      const evChartInstance = useRef(null);
 
       const fetchData = async () => {
         try {
@@ -183,37 +179,43 @@
         localStorage.setItem('kd_garage_map', JSON.stringify(nextMap));
       };
 
-      // Financial Metrics Calculation
+      // SEPARATE FLEET FINANCIAL METRICS
       const validBookings = bookings.filter(b => b.booking_status !== 'maintenance');
-      const totalRevenue = validBookings.reduce((acc, b) => acc + (parseFloat(b.total_rent) || 0), 0);
-      const totalCollected = validBookings.reduce((acc, b) => acc + (parseFloat(b.advance_paid) || 0), 0);
-      const totalDue = Math.max(0, totalRevenue - totalCollected);
 
+      // Petrol Fleet Calculations
+      const petrolVehicles = vehicles.filter(v => v.vehicle_type === 'petrol');
       const petrolBookings = validBookings.filter(b => {
         const v = vehicles.find(veh => veh.id === b.vehicle_id);
         return v && v.vehicle_type === 'petrol';
       });
+      const petrolRevenue = petrolBookings.reduce((acc, b) => acc + (parseFloat(b.total_rent) || 0), 0);
+      const petrolCollected = petrolBookings.reduce((acc, b) => acc + (parseFloat(b.advance_paid) || 0), 0);
+      const petrolDue = Math.max(0, petrolRevenue - petrolCollected);
+
+      // EV Fleet Calculations
+      const evVehicles = vehicles.filter(v => v.vehicle_type === 'ev');
       const evBookings = validBookings.filter(b => {
         const v = vehicles.find(veh => veh.id === b.vehicle_id);
         return v && v.vehicle_type === 'ev';
       });
-
-      const petrolRevenue = petrolBookings.reduce((acc, b) => acc + (parseFloat(b.total_rent) || 0), 0);
       const evRevenue = evBookings.reduce((acc, b) => acc + (parseFloat(b.total_rent) || 0), 0);
+      const evCollected = evBookings.reduce((acc, b) => acc + (parseFloat(b.advance_paid) || 0), 0);
+      const evDue = Math.max(0, evRevenue - evCollected);
 
-      // Render Charts
+      // Render Dedicated Charts
       useEffect(() => {
         if (loading || activeTab !== 'dashboard') return;
 
-        if (collectionChartRef.current) {
-          if (collectionChartInstance.current) collectionChartInstance.current.destroy();
-          const ctx = collectionChartRef.current.getContext('2d');
-          collectionChartInstance.current = new Chart(ctx, {
+        // Petrol Dedicated Chart
+        if (activeDashboardFleet === 'petrol' && petrolChartRef.current) {
+          if (petrolChartInstance.current) petrolChartInstance.current.destroy();
+          const ctx = petrolChartRef.current.getContext('2d');
+          petrolChartInstance.current = new Chart(ctx, {
             type: 'doughnut',
             data: {
               labels: [lang === 'en' ? 'Collected (Advance)' : 'जमा राशि (एडवांस)', lang === 'en' ? 'Due Balance' : 'बाकी रकम'],
               datasets: [{
-                data: [totalCollected || 1, totalDue || 0],
+                data: [petrolCollected || 1, petrolDue || 0],
                 backgroundColor: ['#10B981', '#F43F5E'],
                 borderWidth: 3,
                 borderColor: '#ffffff'
@@ -227,16 +229,17 @@
           });
         }
 
-        if (categoryChartRef.current) {
-          if (categoryChartInstance.current) categoryChartInstance.current.destroy();
-          const ctx = categoryChartRef.current.getContext('2d');
-          categoryChartInstance.current = new Chart(ctx, {
+        // EV Dedicated Chart
+        if (activeDashboardFleet === 'ev' && evChartRef.current) {
+          if (evChartInstance.current) evChartInstance.current.destroy();
+          const ctx = evChartRef.current.getContext('2d');
+          evChartInstance.current = new Chart(ctx, {
             type: 'doughnut',
             data: {
-              labels: [lang === 'en' ? 'Petrol Fleet' : 'पेट्रोल ফ্लीट', lang === 'en' ? 'EV Fleet' : 'ईवी फ्लीट'],
+              labels: [lang === 'en' ? 'Collected (Advance)' : 'जमा राशि (एडवांस)', lang === 'en' ? 'Due Balance' : 'बाकी रकम'],
               datasets: [{
-                data: [petrolRevenue || 1, evRevenue || 0],
-                backgroundColor: ['#F59E0B', '#06B6D4'],
+                data: [evCollected || 1, evDue || 0],
+                backgroundColor: ['#06B6D4', '#F43F5E'],
                 borderWidth: 3,
                 borderColor: '#ffffff'
               }]
@@ -248,7 +251,7 @@
             }
           });
         }
-      }, [bookings, vehicles, loading, activeTab, lang]);
+      }, [bookings, vehicles, loading, activeTab, activeDashboardFleet, lang]);
 
       // Calculate Total Days & Rent for Dynamic Per Day Rate
       const calculateAmounts = (slots, rate, advance) => {
@@ -305,7 +308,7 @@
         });
       };
 
-      // Add Vehicle (Completely Schema-Safe: no is_active or mandatory daily_rent)
+      // Add Vehicle
       const handleAddVehicle = async (e) => {
         e.preventDefault();
         const payload = {
@@ -391,7 +394,7 @@
           customer_name_hi: booking.customer_name_hi || '',
           customer_phone: booking.customer_phone || '',
           customer_whatsapp: booking.customer_whatsapp || '',
-          booking_date: booking.booking_date || new Date().toISOString().split('T')[0],
+          booking_date: booking.booking_date || '2026-10-08',
           daily_rate: inferredRate.toString(),
           slots,
           total_rent: booking.total_rent || 0,
@@ -462,9 +465,6 @@
         const cleanNumber = booking.customer_whatsapp.replace(/\D/g, '');
         window.open(`https://wa.me/${cleanNumber.length === 10 ? '91' + cleanNumber : cleanNumber}?text=${encodeURIComponent(text)}`, '_blank');
       };
-
-      const petrolVehicles = vehicles.filter(v => v.vehicle_type === 'petrol');
-      const evVehicles = vehicles.filter(v => v.vehicle_type === 'ev');
 
       const renderGrid = (list, title, type, badgeColor) => (
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-10">
@@ -560,7 +560,7 @@
                                       customer_name_hi: '',
                                       customer_phone: '',
                                       customer_whatsapp: '',
-                                      booking_date: new Date().toISOString().split('T')[0],
+                                      booking_date: '2026-10-08',
                                       daily_rate: '800',
                                       slots: [{ start_date: item.date, end_date: item.date }],
                                       total_rent: 800,
@@ -654,51 +654,106 @@
             <div className="p-20 text-center text-slate-500 text-lg font-bold">Loading KD Captain Fleet ERP...</div>
           ) : (
             <div>
-              {/* TAB 1: REVENUE DASHBOARD */}
+              {/* TAB 1: 100% SEPARATE PETROL & EV DASHBOARD */}
               {activeTab === 'dashboard' && (
                 <div>
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                    <div className="bg-white p-6 rounded-2xl border border-blue-200 shadow-sm">
-                      <span className="text-xs font-black tracking-wider text-blue-600 uppercase">{t.totalRevenue}</span>
-                      <div className="text-3xl font-black text-slate-900 mt-2">₹{totalRevenue.toLocaleString()}</div>
-                      <p className="text-xs text-slate-400 font-semibold mt-2">Aggregated from confirmed reservations</p>
-                    </div>
-
-                    <div className="bg-white p-6 rounded-2xl border border-emerald-200 shadow-sm">
-                      <span className="text-xs font-black tracking-wider text-emerald-600 uppercase">{t.totalCollected}</span>
-                      <div className="text-3xl font-black text-emerald-600 mt-2">₹{totalCollected.toLocaleString()}</div>
-                      <p className="text-xs text-slate-400 font-semibold mt-2">Advance collected in cash/online</p>
-                    </div>
-
-                    <div className="bg-white p-6 rounded-2xl border border-rose-200 shadow-sm">
-                      <span className="text-xs font-black tracking-wider text-rose-600 uppercase">{t.totalDue}</span>
-                      <div className="text-3xl font-black text-rose-600 mt-2">₹{totalDue.toLocaleString()}</div>
-                      <p className="text-xs text-slate-400 font-semibold mt-2">Payable upon vehicle pickup</p>
-                    </div>
-
-                    <div className="bg-white p-6 rounded-2xl border border-amber-200 shadow-sm">
-                      <span className="text-xs font-black tracking-wider text-amber-600 uppercase">{t.fleetStrength}</span>
-                      <div className="text-3xl font-black text-slate-900 mt-2">{vehicles.length} Units</div>
-                      <p className="text-xs text-slate-400 font-semibold mt-2">
-                        {vehicles.filter(v => !garageMap[v.id]).length} Active • {vehicles.filter(v => !!garageMap[v.id]).length} In Garage
-                      </p>
-                    </div>
+                  {/* Fleet Switcher for Dedicated Dashboards */}
+                  <div className="flex items-center gap-4 mb-6">
+                    <button
+                      onClick={() => setActiveDashboardFleet('petrol')}
+                      className={`px-6 py-3 rounded-2xl font-black text-sm transition flex items-center gap-2.5 shadow-sm ${activeDashboardFleet === 'petrol' ? 'bg-amber-500 text-white shadow-md scale-102' : 'bg-white text-slate-700 hover:bg-slate-100 border'}`}
+                    >
+                      <i className="fa-solid fa-gas-pump"></i> ⛽ Petrol Fleet Dashboard
+                    </button>
+                    <button
+                      onClick={() => setActiveDashboardFleet('ev')}
+                      className={`px-6 py-3 rounded-2xl font-black text-sm transition flex items-center gap-2.5 shadow-sm ${activeDashboardFleet === 'ev' ? 'bg-cyan-600 text-white shadow-md scale-102' : 'bg-white text-slate-700 hover:bg-slate-100 border'}`}
+                    >
+                      <i className="fa-solid fa-bolt"></i> ⚡ EV Fleet Dashboard
+                    </button>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col items-center">
-                      <h3 className="text-base font-black uppercase tracking-wider text-slate-800 mb-4">{t.collectionRatioTitle}</h3>
-                      <div className="h-64 w-full relative">
-                        <canvas ref={collectionChartRef}></canvas>
+                  {/* DEDICATED PETROL DASHBOARD */}
+                  {activeDashboardFleet === 'petrol' && (
+                    <div>
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                        <div className="bg-white p-6 rounded-2xl border border-amber-200 shadow-sm">
+                          <span className="text-xs font-black tracking-wider text-amber-600 uppercase">Petrol Total Revenue</span>
+                          <div className="text-3xl font-black text-slate-900 mt-2">₹{petrolRevenue.toLocaleString()}</div>
+                          <p className="text-xs text-slate-400 font-semibold mt-2">Booked across petrol scooters</p>
+                        </div>
+
+                        <div className="bg-white p-6 rounded-2xl border border-emerald-200 shadow-sm">
+                          <span className="text-xs font-black tracking-wider text-emerald-600 uppercase">Petrol Collected (উঠেছে)</span>
+                          <div className="text-3xl font-black text-emerald-600 mt-2">₹{petrolCollected.toLocaleString()}</div>
+                          <p className="text-xs text-slate-400 font-semibold mt-2">Total advance paid by customers</p>
+                        </div>
+
+                        <div className="bg-white p-6 rounded-2xl border border-rose-200 shadow-sm">
+                          <span className="text-xs font-black tracking-wider text-rose-600 uppercase">Petrol Due (বাকি আছে)</span>
+                          <div className="text-3xl font-black text-rose-600 mt-2">₹{petrolDue.toLocaleString()}</div>
+                          <p className="text-xs text-slate-400 font-semibold mt-2">Pending payment upon handover</p>
+                        </div>
+
+                        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                          <span className="text-xs font-black tracking-wider text-slate-600 uppercase">Petrol Fleet Count</span>
+                          <div className="text-3xl font-black text-slate-900 mt-2">{petrolVehicles.length} Units</div>
+                          <p className="text-xs text-slate-400 font-semibold mt-2">
+                            {petrolVehicles.filter(v => !garageMap[v.id]).length} Live • {petrolVehicles.filter(v => !!garageMap[v.id]).length} In Garage
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Pure Petrol Pie Chart */}
+                      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm max-w-xl mx-auto flex flex-col items-center mb-10">
+                        <h3 className="text-base font-black uppercase tracking-wider text-slate-800 mb-4">⛽ Petrol: Collection vs Due Ratio</h3>
+                        <div className="h-64 w-full relative">
+                          <canvas ref={petrolChartRef}></canvas>
+                        </div>
                       </div>
                     </div>
-                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col items-center">
-                      <h3 className="text-base font-black uppercase tracking-wider text-slate-800 mb-4">{t.fleetRatioTitle}</h3>
-                      <div className="h-64 w-full relative">
-                        <canvas ref={categoryChartRef}></canvas>
+                  )}
+
+                  {/* DEDICATED EV DASHBOARD */}
+                  {activeDashboardFleet === 'ev' && (
+                    <div>
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                        <div className="bg-white p-6 rounded-2xl border border-cyan-200 shadow-sm">
+                          <span className="text-xs font-black tracking-wider text-cyan-600 uppercase">EV Total Revenue</span>
+                          <div className="text-3xl font-black text-slate-900 mt-2">₹{evRevenue.toLocaleString()}</div>
+                          <p className="text-xs text-slate-400 font-semibold mt-2">Booked across electric scooters</p>
+                        </div>
+
+                        <div className="bg-white p-6 rounded-2xl border border-emerald-200 shadow-sm">
+                          <span className="text-xs font-black tracking-wider text-emerald-600 uppercase">EV Collected (উঠেছে)</span>
+                          <div className="text-3xl font-black text-emerald-600 mt-2">₹{evCollected.toLocaleString()}</div>
+                          <p className="text-xs text-slate-400 font-semibold mt-2">Total advance paid by customers</p>
+                        </div>
+
+                        <div className="bg-white p-6 rounded-2xl border border-rose-200 shadow-sm">
+                          <span className="text-xs font-black tracking-wider text-rose-600 uppercase">EV Due (বাকি আছে)</span>
+                          <div className="text-3xl font-black text-rose-600 mt-2">₹{evDue.toLocaleString()}</div>
+                          <p className="text-xs text-slate-400 font-semibold mt-2">Pending payment upon handover</p>
+                        </div>
+
+                        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                          <span className="text-xs font-black tracking-wider text-slate-600 uppercase">EV Fleet Count</span>
+                          <div className="text-3xl font-black text-slate-900 mt-2">{evVehicles.length} Units</div>
+                          <p className="text-xs text-slate-400 font-semibold mt-2">
+                            {evVehicles.filter(v => !garageMap[v.id]).length} Live • {evVehicles.filter(v => !!garageMap[v.id]).length} In Garage
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Pure EV Pie Chart */}
+                      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm max-w-xl mx-auto flex flex-col items-center mb-10">
+                        <h3 className="text-base font-black uppercase tracking-wider text-slate-800 mb-4">⚡ EV: Collection vs Due Ratio</h3>
+                        <div className="h-64 w-full relative">
+                          <canvas ref={evChartRef}></canvas>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               )}
 
@@ -860,7 +915,7 @@
             </div>
           )}
 
-          {/* Modal: Add Vehicle (No Rent Field) */}
+          {/* Modal: Add Vehicle (No Daily Rent Needed) */}
           {showAddVehicleModal && (
             <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
               <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200">
