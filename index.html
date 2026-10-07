@@ -23,7 +23,8 @@
     @media print {
       body * { visibility: hidden; }
       #printable-invoice, #printable-invoice * { visibility: visible; }
-      #printable-invoice { position: absolute; left: 0; top: 0; width: 100%; }
+      #printable-invoice { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 20px; }
+      .no-print { display: none !important; }
     }
   </style>
 </head>
@@ -33,12 +34,12 @@
   <script type="text/babel">
     const { useState, useEffect, useRef } = React;
 
-    // Supabase Credentials
+    // Supabase Configuration
     const SUPABASE_URL = "https://ntlbyqhmhdryqdyxaevk.supabase.co";
     const SUPABASE_KEY = "sb_publishable_HRMQgDnzbWgKC2ocml3T5A_DrMQhE3Q";
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // Live Durga Puja 2026 Schedule (Starting 08 Oct 2026 with 5-Color Repeating Scheme)
+    // Live Durga Puja 2026 Schedule (Starting from 08 Oct with 5-Color Repeating Scheme)
     const PUJA_SCHEDULE = [
       { date: "2026-10-08", label: "Today / Pre-Puja", colorClass: "text-indigo-700 bg-indigo-50 border-indigo-200" },
       { date: "2026-10-09", label: "Pre-Puja", colorClass: "text-emerald-700 bg-emerald-50 border-emerald-200" },
@@ -106,7 +107,10 @@
       const [bookings, setBookings] = useState([]);
       const [loading, setLoading] = useState(true);
 
-      // Local storage map for date-specific garage status: { "vehicleId_YYYY-MM-DD": true }
+      // Local Garage Tracking: Master & Date-Level
+      const [masterGarageMap, setMasterGarageMap] = useState(() => {
+        try { return JSON.parse(localStorage.getItem('kd_master_garage_map') || '{}'); } catch(e) { return {}; }
+      });
       const [dateGarageMap, setDateGarageMap] = useState(() => {
         try { return JSON.parse(localStorage.getItem('kd_date_garage_map') || '{}'); } catch(e) { return {}; }
       });
@@ -119,6 +123,8 @@
       const [showBookingModal, setShowBookingModal] = useState(false);
       const [selectedBookingDetail, setSelectedBookingDetail] = useState(null);
       const [showInvoiceModal, setShowInvoiceModal] = useState(null);
+      const [showSwapModal, setShowSwapModal] = useState(false);
+      const [swapBookingTarget, setSwapBookingTarget] = useState(null);
 
       // Forms
       const [newVehicle, setNewVehicle] = useState({ model_name: '', vehicle_type: 'petrol', registration_no: '' });
@@ -128,17 +134,16 @@
         customer_phone: '',
         customer_whatsapp: '',
         daily_rate: '800',
-        start_date: '2026-10-08',
-        end_date: '2026-10-08',
+        slots: [{ start_date: '2026-10-08', end_date: '2026-10-08' }],
         total_rent: 800,
         advance_paid: 0,
         due_amount: 800,
-        security_deposit: '',
+        security_deposit: '1000',
         original_id_collected: false
       });
-      const [maintenanceDays, setMaintenanceDays] = useState(1);
+      const [dateOverlapError, setDateOverlapError] = useState('');
 
-      // Chart References
+      // Dedicated Chart Refs
       const petrolChartRef = useRef(null);
       const evChartRef = useRef(null);
       const petrolChartInstance = useRef(null);
@@ -161,11 +166,11 @@
         fetchData();
       }, []);
 
-      // Active vs Recycled Bookings Filter
+      // Filter Active vs Recycled Bookings
       const activeBookings = bookings.filter(b => b.booking_status !== 'cancelled' && b.booking_status !== 'maintenance');
       const recycledBookings = bookings.filter(b => b.booking_status === 'cancelled');
 
-      // Petrol Fleet Financials
+      // Petrol Fleet Calculations
       const petrolVehicles = vehicles.filter(v => v.vehicle_type === 'petrol');
       const petrolBookings = activeBookings.filter(b => {
         const v = vehicles.find(veh => veh.id === b.vehicle_id);
@@ -175,7 +180,7 @@
       const petrolCollected = petrolBookings.reduce((acc, b) => acc + (parseFloat(b.advance_paid) || 0), 0);
       const petrolDue = Math.max(0, petrolRevenue - petrolCollected);
 
-      // EV Fleet Financials
+      // EV Fleet Calculations
       const evVehicles = vehicles.filter(v => v.vehicle_type === 'ev');
       const evBookings = activeBookings.filter(b => {
         const v = vehicles.find(veh => veh.id === b.vehicle_id);
@@ -226,21 +231,49 @@
         }
       }, [bookings, vehicles, loading, activeTab, activeDashboardFleet]);
 
-      // Calculate rent dynamic math
-      const calculateAmounts = (sDate, eDate, rate, advance) => {
-        if (!sDate || !eDate) return;
-        const d1 = new Date(sDate);
-        const d2 = new Date(eDate);
-        const days = Math.max(1, Math.round((d2 - d1) / (1000 * 3600 * 24)) + 1);
+      // Overlap Checker across multi-slots
+      const checkSlotOverlaps = (slots) => {
+        for (let i = 0; i < slots.length; i++) {
+          for (let j = i + 1; j < slots.length; j++) {
+            const s1 = slots[i];
+            const s2 = slots[j];
+            if (s1.start_date && s1.end_date && s2.start_date && s2.end_date) {
+              if (!(s1.end_date < s2.start_date || s1.start_date > s2.end_date)) {
+                return true;
+              }
+            }
+          }
+        }
+        return false;
+      };
+
+      // Calculate Total Days & Rent for Multiple Slots
+      const calculateMultiSlotAmounts = (slots, rate, advance) => {
+        let totalDays = 0;
+        const hasOverlap = checkSlotOverlaps(slots);
+        if (hasOverlap) {
+          setDateOverlapError('Warning: Slot dates overlap with each other! Please select separate non-conflicting dates.');
+        } else {
+          setDateOverlapError('');
+        }
+
+        slots.forEach(slot => {
+          if (slot.start_date && slot.end_date) {
+            const d1 = new Date(slot.start_date);
+            const d2 = new Date(slot.end_date);
+            const days = Math.max(1, Math.round((d2 - d1) / (1000 * 3600 * 24)) + 1);
+            totalDays += days;
+          }
+        });
+
         const r = parseFloat(rate) || 0;
-        const total = days * r;
+        const total = totalDays * r;
         const adv = parseFloat(advance) || 0;
         const due = Math.max(0, total - adv);
 
         setNewBooking(prev => ({
           ...prev,
-          start_date: sDate,
-          end_date: eDate,
+          slots,
           daily_rate: rate,
           total_rent: total,
           advance_paid: adv,
@@ -248,8 +281,41 @@
         }));
       };
 
+      const handleSlotChange = (index, field, value) => {
+        const updatedSlots = [...newBooking.slots];
+        updatedSlots[index][field] = value;
+        calculateMultiSlotAmounts(updatedSlots, newBooking.daily_rate, newBooking.advance_paid);
+      };
+
+      const addDateSlot = () => {
+        const updatedSlots = [...newBooking.slots, { start_date: '', end_date: '' }];
+        setNewBooking(prev => ({ ...prev, slots: updatedSlots }));
+      };
+
+      const removeDateSlot = (index) => {
+        if (newBooking.slots.length <= 1) return;
+        const updatedSlots = newBooking.slots.filter((_, i) => i !== index);
+        calculateMultiSlotAmounts(updatedSlots, newBooking.daily_rate, newBooking.advance_paid);
+      };
+
       const getBookingForDate = (vehicleId, dateStr) => {
         return activeBookings.find(b => b.vehicle_id === vehicleId && dateStr >= b.start_date && dateStr <= b.end_date);
+      };
+
+      // Toggle Master Garage (Entire row on/off)
+      const toggleMasterGarage = (vehicleId) => {
+        const nextMap = { ...masterGarageMap, [vehicleId]: !masterGarageMap[vehicleId] };
+        setMasterGarageMap(nextMap);
+        localStorage.setItem('kd_master_garage_map', JSON.stringify(nextMap));
+      };
+
+      // 1-Click Toggle Specific Date Garage
+      const toggleSpecificDateGarage = (vehicleId, dateStr) => {
+        const key = `${vehicleId}_${dateStr}`;
+        const nextMap = { ...dateGarageMap, [key]: !dateGarageMap[key] };
+        setDateGarageMap(nextMap);
+        localStorage.setItem('kd_date_garage_map', JSON.stringify(nextMap));
+        setShowSlotActionModal(false);
       };
 
       // Add Vehicle (Schema-Safe with daily_rent: 0)
@@ -276,19 +342,27 @@
       const handleSaveBooking = async (e) => {
         e.preventDefault();
 
+        if (dateOverlapError) {
+          alert('Please resolve slot date overlap before saving!');
+          return;
+        }
+
         const phoneClean = newBooking.customer_phone.replace(/\D/g, '');
         if (phoneClean.length !== 10) {
           alert('Error: Please enter a valid 10-digit mobile number!');
           return;
         }
 
+        const firstSlot = newBooking.slots[0];
+        const lastSlot = newBooking.slots[newBooking.slots.length - 1];
+
         const payload = {
           vehicle_id: selectedSlot.vehicle.id,
           customer_name: newBooking.customer_name.trim(),
           customer_phone: phoneClean,
           customer_whatsapp: newBooking.customer_whatsapp.replace(/\D/g, '') || phoneClean,
-          start_date: newBooking.start_date,
-          end_date: newBooking.end_date,
+          start_date: firstSlot.start_date,
+          end_date: lastSlot.end_date || firstSlot.end_date,
           total_rent: parseFloat(newBooking.total_rent) || 0,
           advance_paid: parseFloat(newBooking.advance_paid) || 0,
           security_deposit: parseFloat(newBooking.security_deposit) || 0,
@@ -313,6 +387,56 @@
         }
       };
 
+      // Open Edit Booking Modal
+      const openEditBooking = (booking, vehicle) => {
+        setSelectedSlot({ vehicle, date: booking.start_date });
+        setEditingBookingId(booking.id);
+        const slots = [{ start_date: booking.start_date, end_date: booking.end_date }];
+
+        const d1 = new Date(booking.start_date);
+        const d2 = new Date(booking.end_date);
+        const days = Math.max(1, Math.round((d2 - d1) / (1000 * 3600 * 24)) + 1);
+        const inferredRate = Math.round((booking.total_rent || 800) / days);
+
+        setNewBooking({
+          customer_name: booking.customer_name || '',
+          customer_phone: booking.customer_phone || '',
+          customer_whatsapp: booking.customer_whatsapp || '',
+          daily_rate: inferredRate.toString(),
+          slots,
+          total_rent: booking.total_rent || 0,
+          advance_paid: booking.advance_paid || 0,
+          due_amount: Math.max(0, (booking.total_rent || 0) - (booking.advance_paid || 0)),
+          security_deposit: (booking.security_deposit || 1000).toString(),
+          original_id_collected: booking.original_id_collected || false
+        });
+
+        setSelectedBookingDetail(null);
+        setShowBookingModal(true);
+      };
+
+      // Emergency Vehicle Swap
+      const handleSwapVehicle = async (targetVehicleId) => {
+        if (!swapBookingTarget) return;
+        const targetVehicle = vehicles.find(v => v.id === targetVehicleId);
+        if (!targetVehicle) return;
+
+        // Check if target vehicle is free on those dates
+        const conflict = activeBookings.find(b => b.vehicle_id === targetVehicleId && !(b.end_date < swapBookingTarget.start_date || b.start_date > swapBookingTarget.end_date));
+        if (conflict) {
+          alert(`Cannot swap: ${targetVehicle.model_name} is already booked on those dates!`);
+          return;
+        }
+
+        const { error } = await supabase.from('bookings').update({ vehicle_id: targetVehicleId }).eq('id', swapBookingTarget.id);
+        if (!error) {
+          alert(`Successfully swapped booking to ${targetVehicle.model_name}!`);
+          setShowSwapModal(false);
+          setSwapBookingTarget(null);
+          fetchData();
+        } else alert(error.message);
+      };
+
       // Move Booking to Recycle Bin (Soft Delete)
       const handleMoveToRecycleBin = async (bookingId) => {
         if (confirm('Move this booking to Recycle Bin? (It can be recovered anytime)')) {
@@ -324,17 +448,17 @@
         }
       };
 
-      // Recover Booking from Recycle Bin back to Original Slot
+      // Restore Booking from Recycle Bin
       const handleRestoreBooking = async (booking) => {
         const conflict = activeBookings.find(b => b.vehicle_id === booking.vehicle_id && !(b.end_date < booking.start_date || b.start_date > booking.end_date));
         if (conflict) {
-          alert(`Cannot restore: Slot (${booking.start_date} to ${booking.end_date}) is already occupied by${conflict.customer_name}!`);
+          alert(`Cannot restore: Slot (${booking.start_date} to ${booking.end_date}) is already occupied by ${conflict.customer_name}!`);
           return;
         }
 
         const { error } = await supabase.from('bookings').update({ booking_status: 'confirmed' }).eq('id', booking.id);
         if (!error) {
-          alert(`Booking for ${booking.customer_name} restored successfully!`);
+          alert(`Booking for ${booking.customer_name} restored successfully to its original vehicle slot!`);
           fetchData();
         } else alert(error.message);
       };
@@ -348,36 +472,26 @@
         }
       };
 
-      // Toggle Date-Specific Garage Maintenance
-      const toggleDateGarage = (vehicleId, dateStr, days = 1) => {
-        const nextMap = { ...dateGarageMap };
-        const d = new Date(dateStr);
-        for (let i = 0; i < days; i++) {
-          const curDate = new Date(d);
-          curDate.setDate(d.getDate() + i);
-          const key = `${vehicleId}_${curDate.toISOString().split('T')[0]}`;
-          nextMap[key] = !nextMap[key];
-        }
-        setDateGarageMap(nextMap);
-        localStorage.setItem('kd_date_garage_map', JSON.stringify(nextMap));
-        setShowSlotActionModal(false);
-      };
-
+      // WhatsApp Invoice with Comprehensive English Disclaimers
       const sendWhatsAppInvoice = (booking, vehicle) => {
         const due = Math.max(0, (booking.total_rent || 0) - (booking.advance_paid || 0));
-        const depositText = booking.security_deposit > 0 ? `🔒 *Security Deposit:* ₹${booking.security_deposit} (Refundable upon vehicle return)\n` : ``;
+        const depositAmount = booking.security_deposit || 1000;
 
         const text = `*KD CAPTAIN - DURGA PUJA 2026 BOOKING CONFIRMATION*\n\n` +
           `👤 *Customer Name:* ${booking.customer_name}\n` +
-          `🛵 *Vehicle Model:* ${vehicle ? vehicle.model_name : 'Scooty'}\n` +
+          `🛵 *Vehicle Model:* ${vehicle ? vehicle.model_name : 'Scooty'} (${vehicle ? vehicle.registration_no || 'Assigned' : ''})\n` +
           `📅 *Dates:* ${booking.start_date} to ${booking.end_date}\n` +
           `💰 *Total Rental Charge:* ₹${booking.total_rent}\n` +
           `💳 *Advance Received:* ₹${booking.advance_paid}\n` +
           `🔴 *Due Balance at Handover:* ₹${due}\n` +
-          depositText +
-          `🪪 *Mandatory Document:* Original ID Proof required at pickup.\n\n` +
+          `🔒 *Security Deposit:* ₹${depositAmount} (100% Refundable upon vehicle return without damage)\n\n` +
+          `*TERMS & CONDITIONS:*\n` +
+          `1. *Security Deposit:* A refundable security deposit of ₹${depositAmount} is mandatory at delivery. It is 100% refundable on safe return or can be adjusted with final rental.\n` +
+          `2. *Original ID Proof:* Bringing and depositing ONE Original Government ID Proof (Aadhaar/Voter ID/DL) is mandatory during vehicle pickup.\n` +
+          `3. *Payment Settlement:* The remaining due balance must be fully cleared before keys are handed over.\n` +
+          `4. *Traffic & Liability:* Hirer is completely liable for any traffic violations, fines, or accidental damages.\n\n` +
           `Thank you for choosing KD Captain!`;
-        
+
         const cleanNumber = (booking.customer_whatsapp || booking.customer_phone).replace(/\D/g, '');
         window.open(`https://wa.me/${cleanNumber.length === 10 ? '91' + cleanNumber : cleanNumber}?text=${encodeURIComponent(text)}`, '_blank');
       };
@@ -404,7 +518,7 @@
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-blue-100 text-blue-950 border-b border-blue-200 font-black tracking-wide uppercase text-xs">
-                  <th className="p-4 sticky left-0 bg-blue-100 z-10 w-60 shadow-sm">{t.vehicle}</th>
+                  <th className="p-4 sticky left-0 bg-blue-100 z-10 w-64 shadow-sm">{t.vehicle}</th>
                   {PUJA_SCHEDULE.map(item => (
                     <th key={item.date} className="p-3 text-center min-w-[95px] border-l border-blue-200">
                       <div className={`text-[10px] py-1 px-1.5 rounded-lg border font-black tracking-tight mb-1 shadow-xs ${item.colorClass}`}>
@@ -424,77 +538,90 @@
                     </td>
                   </tr>
                 ) : (
-                  list.map(v => (
-                    <tr key={v.id} className="hover:bg-amber-50/40 transition">
-                      <td className="p-4 font-bold text-slate-800 sticky left-0 bg-white z-10 shadow-sm border-r border-slate-200">
-                        <div className="font-black text-blue-700 text-base">{v.model_name}</div>
-                        <div className="text-xs text-slate-400 font-semibold">{v.registration_no || 'Reg Pending'}</div>
-                      </td>
-                      {PUJA_SCHEDULE.map(item => {
-                        const booking = getBookingForDate(v.id, item.date);
-                        const isDateInGarage = !!dateGarageMap[`${v.id}_${item.date}`];
+                  list.map(v => {
+                    const isMasterInGarage = !!masterGarageMap[v.id];
 
-                        return (
-                          <td key={item.date} className="p-1.5 border-l border-slate-100 text-center">
-                            {isDateInGarage ? (
-                              <button
-                                onClick={() => toggleDateGarage(v.id, item.date, 1)}
-                                className="w-full py-2 px-1 bg-amber-100 text-amber-900 border border-amber-300 rounded-lg text-[10px] font-black uppercase hover:bg-emerald-100 hover:text-emerald-800 transition shadow-xs"
-                                title="Click to make Live / Available"
-                              >
-                                🔧 GARAGE
-                              </button>
-                            ) : booking ? (
-                              <button
-                                onClick={() => setSelectedBookingDetail({ booking, vehicle: v })}
-                                className="w-full py-2 px-1 bg-rose-100 text-rose-800 border border-rose-300 rounded-lg text-xs font-black uppercase hover:bg-rose-200 transition shadow-xs"
-                              >
-                                BOOKED
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => {
-                                  setSelectedSlot({ vehicle: v, date: item.date });
-                                  setEditingBookingId(null);
-                                  setNewBooking({
-                                    customer_name: '',
-                                    customer_phone: '',
-                                    customer_whatsapp: '',
-                                    daily_rate: '800',
-                                    start_date: item.date,
-                                    end_date: item.date,
-                                    total_rent: 800,
-                                    advance_paid: 0,
-                                    due_amount: 800,
-                                    security_deposit: '',
-                                    original_id_collected: false
-                                  });
-                                  setShowSlotActionModal(true);
-                                }}
-                                className="w-full py-2 px-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-black uppercase hover:bg-emerald-100 transition shadow-xs"
-                              >
-                                AVAILABLE
-                              </button>
-                            )}
-                          </td>
-                        );
-                      })}
-                      <td className="p-4 text-center border-l border-slate-100">
-                        <button
-                          onClick={async () => {
-                            if (confirm(`Permanently delete ${v.model_name}?`)) {
-                              await supabase.from('vehicles').delete().eq('id', v.id);
-                              fetchData();
-                            }
-                          }}
-                          className="text-slate-400 hover:text-rose-600 p-1.5 transition text-base"
-                          title="Delete Vehicle"
-                        >
-                          <i className="fa-regular fa-trash-can"></i>
-                        </button>
-                      </td>
-                    </tr>
-                  ))
+                    return (
+                      <tr key={v.id} className={`hover:bg-amber-50/40 transition ${isMasterInGarage ? 'bg-slate-100/80 opacity-70' : ''}`}>
+                        <td className="p-4 font-bold text-slate-800 sticky left-0 bg-white z-10 shadow-sm border-r border-slate-200">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="font-black text-blue-700 text-base">{v.model_name}</span>
+                            <button
+                              onClick={() => toggleMasterGarage(v.id)}
+                              className={`text-[10px] px-2 py-0.5 rounded-md font-black uppercase border transition shadow-xs ${!isMasterInGarage ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-rose-100 text-rose-800 border-rose-300'}`}
+                              title="Toggle Entire Row Live / Garage"
+                            >
+                              {!isMasterInGarage ? '● LIVE' : '○ GARAGE'}
+                            </button>
+                          </div>
+                          <div className="text-xs text-slate-400 font-semibold">{v.registration_no || 'Reg Pending'}</div>
+                        </td>
+                        {PUJA_SCHEDULE.map(item => {
+                          const booking = getBookingForDate(v.id, item.date);
+                          const isDateInGarage = !!dateGarageMap[`${v.id}_${item.date}`] || isMasterInGarage;
+
+                          return (
+                            <td key={item.date} className="p-1.5 border-l border-slate-100 text-center">
+                              {isDateInGarage ? (
+                                <button
+                                  onClick={() => !isMasterInGarage && toggleSpecificDateGarage(v.id, item.date)}
+                                  className="w-full py-2 px-1 bg-amber-100 text-amber-900 border border-amber-300 rounded-lg text-[10px] font-black uppercase hover:bg-emerald-100 hover:text-emerald-800 transition shadow-xs"
+                                  title={isMasterInGarage ? "Turn Master ON to edit" : "Click to Make LIVE"}
+                                >
+                                  🔧 GARAGE
+                                </button>
+                              ) : booking ? (
+                                <button
+                                  onClick={() => setSelectedBookingDetail({ booking, vehicle: v })}
+                                  className="w-full py-2 px-1 bg-rose-100 text-rose-800 border border-rose-300 rounded-lg text-xs font-black uppercase hover:bg-rose-200 transition shadow-xs"
+                                >
+                                  BOOKED
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => {
+                                    setSelectedSlot({ vehicle: v, date: item.date });
+                                    setEditingBookingId(null);
+                                    setDateOverlapError('');
+                                    setNewBooking({
+                                      customer_name: '',
+                                      customer_phone: '',
+                                      customer_whatsapp: '',
+                                      daily_rate: '800',
+                                      slots: [{ start_date: item.date, end_date: item.date }],
+                                      total_rent: 800,
+                                      advance_paid: 0,
+                                      due_amount: 800,
+                                      security_deposit: '1000',
+                                      original_id_collected: false
+                                    });
+                                    setShowSlotActionModal(true);
+                                  }}
+                                  className="w-full py-2 px-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-black uppercase hover:bg-emerald-100 transition shadow-xs"
+                                >
+                                  AVAILABLE
+                                </button>
+                              )}
+                            </td>
+                          );
+                        })}
+                        <td className="p-4 text-center border-l border-slate-100">
+                          <button
+                            onClick={async () => {
+                              if (confirm(`Permanently delete ${v.model_name}?`)) {
+                                await supabase.from('vehicles').delete().eq('id', v.id);
+                                fetchData();
+                              }
+                            }}
+                            className="text-slate-400 hover:text-rose-600 p-1.5 transition text-base"
+                            title="Delete Vehicle"
+                          >
+                            <i className="fa-regular fa-trash-can"></i>
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -683,34 +810,20 @@
                               <tr key={b.id} className="hover:bg-slate-50 transition">
                                 <td className="p-4 text-center font-black text-slate-400">{index + 1}</td>
                                 <td className="p-4 font-black text-slate-900 text-sm">{b.customer_name}</td>
-                                <td className="p-4 font-bold">{b.customer_phone}</td>
+                                <td className="p-4">
+                                  <div className="font-bold">{b.customer_phone}</div>
+                                  <div className="text-[10px] text-emerald-600 font-bold">WA: {b.customer_whatsapp}</div>
+                                </td>
                                 <td className="p-4 font-black text-blue-700">{veh ? veh.model_name : 'Scooty'}</td>
                                 <td className="p-4 font-bold text-slate-700">{b.start_date.slice(5)} to {b.end_date.slice(5)}</td>
                                 <td className="p-4 text-right font-black text-slate-900">₹{b.total_rent}</td>
                                 <td className="p-4 text-right font-black text-emerald-600">₹{b.advance_paid}</td>
                                 <td className="p-4 text-right font-black text-rose-600">₹{due}</td>
-                                <td className="p-4 text-center text-amber-700 font-black">{b.security_deposit ? `₹${b.security_deposit}` : 'N/A'}</td>
+                                <td className="p-4 text-center text-amber-700 font-black">₹{b.security_deposit || 1000}</td>
                                 <td className="p-4 text-center">
                                   <div className="flex items-center justify-center gap-1.5">
                                     <button
-                                      onClick={() => {
-                                        setSelectedSlot({ vehicle: veh, date: b.start_date });
-                                        setEditingBookingId(b.id);
-                                        setNewBooking({
-                                          customer_name: b.customer_name,
-                                          customer_phone: b.customer_phone,
-                                          customer_whatsapp: b.customer_whatsapp,
-                                          daily_rate: '800',
-                                          start_date: b.start_date,
-                                          end_date: b.end_date,
-                                          total_rent: b.total_rent,
-                                          advance_paid: b.advance_paid,
-                                          due_amount: due,
-                                          security_deposit: b.security_deposit || '',
-                                          original_id_collected: b.original_id_collected || false
-                                        });
-                                        setShowBookingModal(true);
-                                      }}
+                                      onClick={() => openEditBooking(b, veh)}
                                       className="p-2 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-xl"
                                       title="Edit Booking"
                                     >
@@ -722,6 +835,13 @@
                                       title="WhatsApp"
                                     >
                                       <i className="fa-brands fa-whatsapp"></i>
+                                    </button>
+                                    <button
+                                      onClick={() => setShowInvoiceModal({ booking: b, vehicle: veh || { model_name: 'Scooty', vehicle_type: 'petrol', registration_no: '' } })}
+                                      className="p-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-xl"
+                                      title="View / Print PDF Bill"
+                                    >
+                                      <i className="fa-solid fa-print"></i>
                                     </button>
                                     <button
                                       onClick={() => handleMoveToRecycleBin(b.id)}
@@ -801,7 +921,7 @@
             </div>
           )}
 
-          {/* Modal: Slot Action Choice */}
+          {/* Modal: Slot Action Choice (Direct 1-Click Garage Lock vs Booking) */}
           {showSlotActionModal && selectedSlot && (
             <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
               <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 border border-slate-200">
@@ -812,33 +932,19 @@
                   </button>
                 </div>
                 <p className="text-xs text-slate-500 mb-6 font-bold">Selected Date: <span className="text-blue-600">{selectedSlot.date}</span></p>
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <button
                     onClick={() => { setShowSlotActionModal(false); setShowBookingModal(true); }}
                     className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl text-xs flex items-center justify-center gap-2 shadow-md transition"
                   >
                     <i className="fa-solid fa-user-plus"></i> New Customer Booking
                   </button>
-                  <div className="pt-4 border-t space-y-3">
-                    <span className="block text-xs font-black text-amber-800 uppercase tracking-wider">Send to Garage (Specific Days)</span>
-                    <div className="flex items-center gap-2">
-                      <label className="text-xs font-bold text-slate-600">Number of Days:</label>
-                      <input
-                        type="number"
-                        min="1"
-                        max="15"
-                        value={maintenanceDays}
-                        onChange={e => setMaintenanceDays(parseInt(e.target.value) || 1)}
-                        className="w-20 p-2 border rounded-lg font-bold text-center"
-                      />
-                    </div>
-                    <button
-                      onClick={() => toggleDateGarage(selectedSlot.vehicle.id, selectedSlot.date, maintenanceDays)}
-                      className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-black rounded-xl text-xs transition shadow-md"
-                    >
-                      Confirm Garage Lock ({maintenanceDays} Days)
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => toggleSpecificDateGarage(selectedSlot.vehicle.id, selectedSlot.date)}
+                    className="w-full py-2.5 px-4 bg-amber-500 hover:bg-amber-600 text-white font-black rounded-xl text-xs flex items-center justify-center gap-2 shadow-md transition"
+                  >
+                    <i className="fa-solid fa-wrench"></i> 1-Click Set to Garage (Turn OFF)
+                  </button>
                 </div>
               </div>
             </div>
@@ -883,7 +989,7 @@
             </div>
           )}
 
-          {/* Modal: Booking Form with 10-Digit Mobile Mandatory Validation */}
+          {/* Modal: Booking Form with Multi-Date Slot & Overlap Guard */}
           {showBookingModal && selectedSlot && (
             <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
               <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 border border-slate-200 my-8">
@@ -900,7 +1006,7 @@
                     <label className="block font-black text-slate-700 mb-1">Customer Full Name *</label>
                     <input
                       required
-                      placeholder="Enter customer name"
+                      placeholder="Enter customer name in English"
                       value={newBooking.customer_name}
                       onChange={e => setNewBooking({ ...newBooking, customer_name: e.target.value })}
                       className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-bold"
@@ -933,39 +1039,81 @@
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-3 bg-amber-50/60 p-3 rounded-xl border border-amber-200">
-                    <div>
-                      <label className="block font-black text-amber-900 mb-1">From Date</label>
-                      <input
-                        type="date"
-                        required
-                        value={newBooking.start_date}
-                        onChange={e => calculateAmounts(e.target.value, newBooking.end_date, newBooking.daily_rate, newBooking.advance_paid)}
-                        className="w-full p-2 border rounded-lg font-bold bg-white"
-                      />
+                  {/* Multi-Date Slot Selector */}
+                  <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="font-black text-slate-800 uppercase tracking-wide text-[11px]">
+                        📅 Rental Date Slots
+                      </span>
+                      <button
+                        type="button"
+                        onClick={addDateSlot}
+                        className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-800 px-2.5 py-1 rounded-lg font-bold transition flex items-center gap-1"
+                      >
+                        <i className="fa-solid fa-plus"></i> Add More Dates
+                      </button>
                     </div>
-                    <div>
-                      <label className="block font-black text-amber-900 mb-1">To Date</label>
-                      <input
-                        type="date"
-                        required
-                        value={newBooking.end_date}
-                        onChange={e => calculateAmounts(newBooking.start_date, e.target.value, newBooking.daily_rate, newBooking.advance_paid)}
-                        className="w-full p-2 border rounded-lg font-bold bg-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="block font-black text-amber-900 mb-1">Rate (₹/Day)</label>
-                      <input
-                        type="number"
-                        required
-                        value={newBooking.daily_rate}
-                        onChange={e => calculateAmounts(newBooking.start_date, newBooking.end_date, e.target.value, newBooking.advance_paid)}
-                        className="w-full p-2 border rounded-lg font-bold bg-white"
-                      />
-                    </div>
+
+                    {dateOverlapError && (
+                      <div className="p-2 bg-rose-50 border border-rose-300 text-rose-700 rounded-lg font-bold text-[11px]">
+                        {dateOverlapError}
+                      </div>
+                    )}
+
+                    {newBooking.slots.map((slot, sIdx) => (
+                      <div key={sIdx} className="bg-white p-2.5 rounded-lg border border-slate-200 relative">
+                        <div className="flex justify-between items-center mb-1 text-[10px] font-bold text-slate-400">
+                          <span>SLOT #{sIdx + 1}</span>
+                          {newBooking.slots.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeDateSlot(sIdx)}
+                              className="text-rose-500 hover:text-rose-700"
+                              title="Remove slot"
+                            >
+                              <i className="fa-solid fa-trash-can"></i>
+                            </button>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="text-[10px] font-bold text-slate-500">From Date</label>
+                            <input
+                              type="date"
+                              required
+                              value={slot.start_date}
+                              onChange={e => handleSlotChange(sIdx, 'start_date', e.target.value)}
+                              className="w-full p-1.5 border rounded-md font-bold text-xs"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] font-bold text-slate-500">To Date</label>
+                            <input
+                              type="date"
+                              required
+                              value={slot.end_date}
+                              onChange={e => handleSlotChange(sIdx, 'end_date', e.target.value)}
+                              className="w-full p-1.5 border rounded-md font-bold text-xs"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
 
+                  <div className="bg-amber-50/60 p-3 rounded-xl border border-amber-200">
+                    <label className="block font-black text-amber-900 mb-1">Per Day Rent Rate (₹/দিন)</label>
+                    <input
+                      type="number"
+                      required
+                      placeholder="e.g. 800"
+                      value={newBooking.daily_rate}
+                      onChange={e => calculateMultiSlotAmounts(newBooking.slots, e.target.value, newBooking.advance_paid)}
+                      className="w-full p-2 border rounded-lg font-bold bg-white"
+                    />
+                  </div>
+
+                  {/* Auto-Calculated Amounts */}
                   <div className="grid grid-cols-3 gap-3">
                     <div>
                       <label className="block font-black text-slate-700 mb-1">Total Rent (Auto)</label>
@@ -1006,10 +1154,10 @@
                   </div>
 
                   <div>
-                    <label className="block font-black text-slate-700 mb-1">Security Deposit (₹) <span className="text-slate-400 font-normal">(Optional)</span></label>
+                    <label className="block font-black text-slate-700 mb-1">Security Deposit (₹) <span className="text-emerald-700 font-bold">(Refundable ₹1000 Default)</span></label>
                     <input
                       type="number"
-                      placeholder="Leave empty or enter amount (e.g. 1000)"
+                      placeholder="1000"
                       value={newBooking.security_deposit}
                       onChange={e => setNewBooking({ ...newBooking, security_deposit: e.target.value })}
                       className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-amber-500 outline-none font-bold"
@@ -1024,12 +1172,12 @@
                       onChange={e => setNewBooking({ ...newBooking, original_id_collected: e.target.checked })}
                       className="rounded text-blue-600"
                     />
-                    <label htmlFor="origId" className="text-slate-700 font-bold">Original ID Proof collected</label>
+                    <label htmlFor="origId" className="text-slate-700 font-bold">Original Government ID Proof collected</label>
                   </div>
 
                   <div className="flex justify-end gap-2 pt-3">
                     <button type="button" onClick={() => setShowBookingModal(false)} className="px-4 py-2 bg-slate-100 rounded-xl font-bold text-slate-600">Cancel</button>
-                    <button type="submit" className="px-5 py-2 bg-emerald-600 text-white rounded-xl font-black shadow-md hover:bg-emerald-700">
+                    <button type="submit" disabled={!!dateOverlapError} className={`px-5 py-2 text-white rounded-xl font-black shadow-md ${dateOverlapError ? 'bg-slate-400 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700'}`}>
                       {editingBookingId ? 'Update Booking' : 'Confirm Booking'}
                     </button>
                   </div>
@@ -1077,20 +1225,171 @@
                     <span className="text-slate-500 font-bold">Due (বাকি):</span>
                     <span className="font-black text-rose-600 text-sm">₹{Math.max(0, (selectedBookingDetail.booking.total_rent || 0) - (selectedBookingDetail.booking.advance_paid || 0))}</span>
                   </div>
+                  <div className="flex justify-between py-1 border-b">
+                    <span className="text-slate-500 font-bold">Security Deposit:</span>
+                    <span className="font-black text-amber-700">₹{selectedBookingDetail.booking.security_deposit || 1000}</span>
+                  </div>
                 </div>
 
-                <div className="flex flex-col gap-2.5 pt-6">
+                <div className="flex flex-col gap-2 pt-5">
                   <button
                     onClick={() => sendWhatsAppInvoice(selectedBookingDetail.booking, selectedBookingDetail.vehicle)}
                     className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl text-xs flex items-center justify-center gap-2"
                   >
-                    <i className="fa-brands fa-whatsapp text-base"></i> Send WhatsApp Confirmation
+                    <i className="fa-brands fa-whatsapp text-base"></i> Send WhatsApp Bill
                   </button>
                   <button
-                    onClick={() => handleMoveToRecycleBin(selectedBookingDetail.booking.id)}
-                    className="w-full py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-black rounded-xl text-xs flex items-center justify-center gap-2"
+                    onClick={() => {
+                      setShowInvoiceModal(selectedBookingDetail);
+                      setSelectedBookingDetail(null);
+                    }}
+                    className="w-full py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-black rounded-xl text-xs flex items-center justify-center gap-2"
                   >
-                    <i className="fa-solid fa-trash-can text-base"></i> Delete / Move to Recycle Bin
+                    <i className="fa-solid fa-file-invoice text-base"></i> View / Print PDF Official Bill
+                  </button>
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <button
+                      onClick={() => {
+                        setSwapBookingTarget(selectedBookingDetail.booking);
+                        setShowSwapModal(true);
+                        setSelectedBookingDetail(null);
+                      }}
+                      className="py-2 bg-amber-500 hover:bg-amber-600 text-white font-black rounded-xl text-xs flex items-center justify-center gap-1.5"
+                    >
+                      <i className="fa-solid fa-arrows-rotate"></i> Emergency Swap
+                    </button>
+                    <button
+                      onClick={() => handleMoveToRecycleBin(selectedBookingDetail.booking.id)}
+                      className="py-2 bg-rose-600 hover:bg-rose-700 text-white font-black rounded-xl text-xs flex items-center justify-center gap-1.5"
+                    >
+                      <i className="fa-solid fa-trash-can"></i> Recycle Bin
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Modal: Emergency Vehicle Swap */}
+          {showSwapModal && swapBookingTarget && (
+            <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+              <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 border border-slate-200">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-base font-black text-slate-900">Emergency Vehicle Swap</h3>
+                  <button onClick={() => setShowSwapModal(false)} className="text-slate-400 hover:text-slate-600">
+                    <i className="fa-solid fa-xmark text-lg"></i>
+                  </button>
+                </div>
+                <p className="text-xs text-slate-600 mb-4 font-semibold">
+                  Select available vehicle to shift booking of <strong>{swapBookingTarget.customer_name}</strong>:
+                </p>
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {vehicles.filter(v => v.id !== swapBookingTarget.vehicle_id).map(v => (
+                    <button
+                      key={v.id}
+                      onClick={() => handleSwapVehicle(v.id)}
+                      className="w-full p-2.5 text-left border rounded-xl hover:bg-blue-50 hover:border-blue-300 transition flex justify-between items-center"
+                    >
+                      <div>
+                        <div className="font-black text-slate-800 text-xs">{v.model_name}</div>
+                        <div className="text-[10px] text-slate-400">{v.vehicle_type.toUpperCase()} • {v.registration_no || 'Reg Pending'}</div>
+                      </div>
+                      <span className="text-xs font-bold text-blue-600">Shift Ride →</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Modal: Official English Printable Invoice (with Legal Disclaimers) */}
+          {showInvoiceModal && (
+            <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
+              <div className="bg-white rounded-2xl shadow-2xl max-w-xl w-full p-8 border border-slate-200 my-8">
+                <div id="printable-invoice" className="text-slate-800 text-xs">
+                  {/* Bill Header */}
+                  <div className="border-b-2 border-slate-800 pb-4 mb-4 flex justify-between items-start">
+                    <div>
+                      <h1 className="text-2xl font-black tracking-tight text-slate-900">KD CAPTAIN</h1>
+                      <p className="text-xs text-slate-500 font-bold">Two-Wheeler Rental Service | Durga Puja 2026 Fleet</p>
+                      <p className="text-xs text-slate-500 font-bold">Kolkata / Delhi</p>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-lg font-black text-slate-800">OFFICIAL RENTAL RECEIPT</div>
+                      <div className="text-xs text-slate-400 font-semibold">Date: {new Date().toLocaleDateString()}</div>
+                    </div>
+                  </div>
+
+                  {/* Customer & Vehicle Details */}
+                  <div className="grid grid-cols-2 gap-4 mb-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <div>
+                      <div className="text-[10px] uppercase font-black text-slate-400 tracking-wider">Customer Details</div>
+                      <div className="font-black text-slate-900 text-sm mt-1">{showInvoiceModal.booking.customer_name}</div>
+                      <div className="font-bold">Phone: {showInvoiceModal.booking.customer_phone}</div>
+                      <div className="font-bold">WhatsApp: {showInvoiceModal.booking.customer_whatsapp}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] uppercase font-black text-slate-400 tracking-wider">Vehicle Assigned</div>
+                      <div className="font-black text-blue-700 text-sm mt-1">{showInvoiceModal.vehicle.model_name}</div>
+                      <div className="font-bold">Type: {showInvoiceModal.vehicle.vehicle_type.toUpperCase()}</div>
+                      <div className="font-bold">Reg No: {showInvoiceModal.vehicle.registration_no || 'TBA'}</div>
+                    </div>
+                  </div>
+
+                  {/* Financial Breakdown Table */}
+                  <table className="w-full mb-4 border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-200 text-slate-500 text-[10px] uppercase font-black">
+                        <th className="py-2 text-left">Description</th>
+                        <th className="py-2 text-right">Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 font-bold">
+                      <tr>
+                        <td className="py-2.5">Rental Duration: {showInvoiceModal.booking.start_date} to {showInvoiceModal.booking.end_date}</td>
+                        <td className="py-2.5 text-right font-black">₹{showInvoiceModal.booking.total_rent}</td>
+                      </tr>
+                      <tr>
+                        <td className="py-2.5 text-slate-500">Advance Received (Collected)</td>
+                        <td className="py-2.5 text-right text-emerald-600 font-black">- ₹{showInvoiceModal.booking.advance_paid || 0}</td>
+                      </tr>
+                      <tr>
+                        <td className="py-2.5 text-slate-500">Refundable Security Deposit</td>
+                        <td className="py-2.5 text-right text-amber-700 font-black">₹{showInvoiceModal.booking.security_deposit || 1000}</td>
+                      </tr>
+                      <tr className="font-black text-slate-900 border-t border-slate-300 text-sm">
+                        <td className="py-2.5">Remaining Balance to Pay (Due at Handover)</td>
+                        <td className="py-2.5 text-right text-rose-600">₹{Math.max(0, (showInvoiceModal.booking.total_rent || 0) - (showInvoiceModal.booking.advance_paid || 0))}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  {/* Mandatory Terms & Conditions (100% English Disclaimers) */}
+                  <div className="border border-slate-200 rounded-xl p-4 bg-slate-50 space-y-2 text-[11px] text-slate-600 leading-relaxed mb-6 font-medium">
+                    <div className="font-black text-slate-900 text-xs mb-1">TERMS & CONDITIONS:</div>
+                    <div>1. <strong>Security Deposit:</strong> A mandatory refundable security deposit of ₹{showInvoiceModal.booking.security_deposit || 1000} must be submitted upon delivery. The amount is 100% refundable upon vehicle return without any accidental or mechanical damage, or can be mutually adjusted with the final rental charge.</div>
+                    <div>2. <strong>Original Identity Proof:</strong> The hirer MUST bring and deposit ONE Original Government Identity Proof (Aadhaar Card / Voter ID / Driving License) at the time of pickup. The document will remain safely deposited with management until vehicle return.</div>
+                    <div>3. <strong>Payment Settlement:</strong> The remaining due balance must be fully cleared before the keys are handed over on the pickup date.</div>
+                    <div>4. <strong>Safe Operation & Liability:</strong> The hirer is fully liable for any traffic violations, fines, challans, or accidental damage incurred during the rental tenure.</div>
+                  </div>
+
+                  {/* Signatures */}
+                  <div className="flex justify-between items-end pt-4 border-t border-slate-200 text-xs font-bold">
+                    <div>
+                      <p className="text-slate-400">Authorized Signature</p>
+                      <p className="font-black mt-4">KD Captain Management</p>
+                    </div>
+                    <div>
+                      <p className="text-slate-400">Customer Signature</p>
+                      <p className="font-black mt-4">_______________________</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-slate-200 no-print">
+                  <button onClick={() => setShowInvoiceModal(null)} className="px-5 py-2.5 bg-slate-100 rounded-xl text-xs font-bold text-slate-600">Close</button>
+                  <button onClick={() => window.print()} className="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-black shadow-md hover:bg-blue-700 flex items-center gap-2">
+                    <i className="fa-solid fa-print"></i> Print / Save as PDF
                   </button>
                 </div>
               </div>
