@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KD Captain | Durga Puja 2026 Fleet & Revenue Tracker</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- React & ReactDOM CDN -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <!-- Babel CDN -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- Supabase JS Client CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    @media print {
+      body * { visibility: hidden; }
+      #printable-invoice, #printable-invoice * { visibility: visible; }
+      #printable-invoice { position: absolute; left: 0; top: 0; width: 100%; }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased font-sans">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // Supabase Credentials
+    const SUPABASE_URL = "https://ntlbyqhmhdryqdyxaevk.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_HRMQgDnzbWgKC2ocml3T5A_DrMQhE3Q";
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // 5-Color Repeating Palette for 11 Puja Days
+    const PUJA_SCHEDULE = [
+      { date: "2026-10-10", label: "Mahalaya", colorClass: "text-indigo-600 bg-indigo-50 border-indigo-200" },
+      { date: "2026-10-11", label: "Pratipada", colorClass: "text-emerald-600 bg-emerald-50 border-emerald-200" },
+      { date: "2026-10-12", label: "Dwitiya", colorClass: "text-amber-600 bg-amber-50 border-amber-200" },
+      { date: "2026-10-13", label: "Tritiya", colorClass: "text-purple-600 bg-purple-50 border-purple-200" },
+      { date: "2026-10-14", label: "Chaturthi", colorClass: "text-teal-600 bg-teal-50 border-teal-200" },
+      { date: "2026-10-15", label: "Panchami", colorClass: "text-indigo-600 bg-indigo-50 border-indigo-200" },
+      { date: "2026-10-16", label: "Maha Sasthi", colorClass: "text-emerald-600 bg-emerald-50 border-emerald-200" },
+      { date: "2026-10-17", label: "Maha Saptami", colorClass: "text-amber-600 bg-amber-50 border-amber-200" },
+      { date: "2026-10-18", label: "Maha Asthami", colorClass: "text-purple-600 bg-purple-50 border-purple-200" },
+      { date: "2026-10-19", label: "Maha Navami", colorClass: "text-teal-600 bg-teal-50 border-teal-200" },
+      { date: "2026-10-20", label: "Vijaya Dashami", colorClass: "text-indigo-600 bg-indigo-50 border-indigo-200" },
+    ];
+
+    // Language Dictionary (English & Hindi)
+    const DICTIONARY = {
+      en: {
+        subtitle: "Durga Puja 2026 Fleet & Revenue Tracker (Kolkata / Delhi)",
+        tabTimeline: "Booking Timeline",
+        tabCustomers: "Customer Database",
+        totalRevenue: "Total Revenue (Booked)",
+        totalCollected: "Total Collected (Advance)",
+        totalDue: "Total Due (Pending)",
+        fleetStrength: "Fleet Status",
+        petrolGrid: "Petrol Scooty Dashboard",
+        evGrid: "EV Scooty Dashboard",
+        addPetrol: "Add Petrol Vehicle",
+        addEv: "Add EV Vehicle",
+        garage: "Garage / Maintenance",
+        active: "Active",
+        available: "Available",
+        booked: "Booked",
+        inGarage: "In Garage",
+        rentPerDay: "Rent/Day",
+        vehicle: "Vehicle / Model",
+        action: "Action"
+      },
+      hi: {
+        subtitle: "दुर्गा पूजा 2026 फ्लीट और रेवेन्यू ट्रैकर (कोलकाता / दिल्ली)",
+        tabTimeline: "बुकिंग टाइमलाइन",
+        tabCustomers: "कस्टमर डेटाबेस",
+        totalRevenue: "कुल रेवेन्यू (बुकिंग मूल्य)",
+        totalCollected: "कुल जमा (एडवांस मिला)",
+        totalDue: "कुल बाकी (डिलीवरी पर)",
+        fleetStrength: "गाड़ी स्थिति",
+        petrolGrid: "पेट्रोल स्कूटी डैशबोर्ड",
+        evGrid: "ईवी स्कूटी डैशबोर्ड",
+        addPetrol: "पेट्रोल गाड़ी जोड़ें",
+        addEv: "ईवी गाड़ी जोड़ें",
+        garage: "गैराज / मेंटेनेंस",
+        active: "चालू है",
+        available: "खाली है",
+        booked: "बुक है",
+        inGarage: "गैराज में है",
+        rentPerDay: "किराया/दिन",
+        vehicle: "गाड़ी / मॉडल",
+        action: "कार्रवाई"
+      }
+    };
+
+    function App() {
+      const [lang, setLang] = useState('en');
+      const t = DICTIONARY[lang];
+
+      const [vehicles, setVehicles] = useState([]);
+      const [bookings, setBookings] = useState([]);
+      const [loading, setLoading] = useState(true);
+      const [activeTab, setActiveTab] = useState('timeline');
+
+      // Modals
+      const [showAddVehicleModal, setShowAddVehicleModal] = useState(false);
+      const [vehicleTypeToAdd, setVehicleTypeToAdd] = useState('petrol');
+      const [showSlotActionModal, setShowSlotActionModal] = useState(false);
+      const [selectedSlot, setSelectedSlot] = useState(null); // { vehicle, date }
+      const [showBookingModal, setShowBookingModal] = useState(false);
+      const [selectedBookingDetail, setSelectedBookingDetail] = useState(null);
+      const [showInvoiceModal, setShowInvoiceModal] = useState(null);
+
+      // Forms
+      const [newVehicle, setNewVehicle] = useState({ model_name: '', vehicle_type: 'petrol', registration_no: '', daily_rent: '' });
+      const [newBooking, setNewBooking] = useState({
+        customer_name: '', customer_phone: '', customer_whatsapp: '',
+        start_date: '', end_date: '', total_rent: 0, advance_paid: 0, due_amount: 0,
+        security_deposit: '', original_id_collected: false
+      });
+      const [maintenanceRange, setMaintenanceRange] = useState({ start_date: '', end_date: '' });
+
+      // Chart Refs
+      const revenueChartRef = useRef(null);
+      const fleetChartRef = useRef(null);
+      const revenueChartInstance = useRef(null);
+      const fleetChartInstance = useRef(null);
+
+      const fetchData = async () => {
+        try {
+          const { data: vData } = await supabase.from('vehicles').select('*').order('created_at', { ascending: true });
+          const { data: bData } = await supabase.from('bookings').select('*').order('created_at', { ascending: false });
+          setVehicles(vData || []);
+          setBookings(bData || []);
+        } catch (err) {
+          console.error(err);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      useEffect(() => {
+        fetchData();
+      }, []);
+
+      // Metrics
+      const validBookings = bookings.filter(b => b.booking_status !== 'maintenance');
+      const totalRevenue = validBookings.reduce((acc, b) => acc + (parseFloat(b.total_rent) || 0), 0);
+      const totalCollected = validBookings.reduce((acc, b) => acc + (parseFloat(b.advance_paid) || 0), 0);
+      const totalDue = Math.max(0, totalRevenue - totalCollected);
+
+      const petrolBookings = validBookings.filter(b => {
+        const v = vehicles.find(veh => veh.id === b.vehicle_id);
+        return v && v.vehicle_type === 'petrol';
+      });
+      const evBookings = validBookings.filter(b => {
+        const v = vehicles.find(veh => veh.id === b.vehicle_id);
+        return v && v.vehicle_type === 'ev';
+      });
+
+      const petrolRevenue = petrolBookings.reduce((acc, b) => acc + (parseFloat(b.total_rent) || 0), 0);
+      const evRevenue = evBookings.reduce((acc, b) => acc + (parseFloat(b.total_rent) || 0), 0);
+
+      // Render Charts
+      useEffect(() => {
+        if (loading) return;
+
+        if (revenueChartRef.current) {
+          if (revenueChartInstance.current) revenueChartInstance.current.destroy();
+          const ctx = revenueChartRef.current.getContext('2d');
+          revenueChartInstance.current = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+              labels: [lang === 'en' ? 'Collected (Advance)' : 'जमा राशि (एडवांस)', lang === 'en' ? 'Due Amount' : 'बाकी रकम'],
+              datasets: [{
+                data: [totalCollected || 1, totalDue || 0],
+                backgroundColor: ['#10B981', '#F43F5E'],
+                borderWidth: 2,
+                borderColor: '#ffffff'
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } } }
+            }
+          });
+        }
+
+        if (fleetChartRef.current) {
+          if (fleetChartInstance.current) fleetChartInstance.current.destroy();
+          const ctx = fleetChartRef.current.getContext('2d');
+          fleetChartInstance.current = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+              labels: [lang === 'en' ? 'Petrol Scooty' : 'पेट्रोल स्कूटी', lang === 'en' ? 'EV Scooty' : 'ईवी स्कूटी'],
+              datasets: [{
+                data: [petrolRevenue || 1, evRevenue || 0],
+                backgroundColor: ['#F59E0B', '#06B6D4'],
+                borderWidth: 2,
+                borderColor: '#ffffff'
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } } }
+            }
+          });
+        }
+      }, [bookings, vehicles, loading, activeTab, lang]);
+
+      // Calculations
+      const autoCalculateAmounts = (startDate, endDate, advance, dailyRate) => {
+        if (!startDate || !endDate || !dailyRate) return;
+        const d1 = new Date(startDate);
+        const d2 = new Date(endDate);
+        const diffDays = Math.max(1, Math.round((d2 - d1) / (1000 * 3600 * 24)));
+        const total = diffDays * parseFloat(dailyRate);
+        const adv = parseFloat(advance) || 0;
+        const due = Math.max(0, total - adv);
+
+        setNewBooking(prev => ({ ...prev, total_rent: total, advance_paid: adv, due_amount: due }));
+      };
+
+      const handleAddVehicle = async (e) => {
+        e.preventDefault();
+        const { error } = await supabase.from('vehicles').insert([{
+          model_name: newVehicle.model_name,
+          vehicle_type: vehicleTypeToAdd,
+          registration_no: newVehicle.registration_no,
+          daily_rent: parseFloat(newVehicle.daily_rent) || 0,
+          is_active: true
+        }]);
+
+        if (!error) {
+          setShowAddVehicleModal(false);
+          setNewVehicle({ model_name: '', vehicle_type: 'petrol', registration_no: '', daily_rent: '' });
+          fetchData();
+        } else alert('Error adding vehicle: ' + error.message);
+      };
+
+      const handleToggleMasterVehicle = async (vehicle) => {
+        const nextState = vehicle.is_active === false ? true : false;
+        const { error } = await supabase.from('vehicles').update({ is_active: nextState }).eq('id', vehicle.id);
+        if (!error) fetchData();
+        else alert('Error updating status: ' + error.message);
+      };
+
+      const handleDeleteVehicle = async (vehicleId, name) => {
+        if (confirm(`Are you sure you want to delete ${name} permanently?`)) {
+          const { error } = await supabase.from('vehicles').delete().eq('id', vehicleId);
+          if (!error) fetchData();
+          else alert('Error: ' + error.message);
+        }
+      };
+
+      const handleAddBooking = async (e) => {
+        e.preventDefault();
+        const { error } = await supabase.from('bookings').insert([{
+          vehicle_id: selectedSlot.vehicle.id,
+          customer_name: newBooking.customer_name,
+          customer_phone: newBooking.customer_phone,
+          customer_whatsapp: newBooking.customer_whatsapp,
+          start_date: newBooking.start_date,
+          end_date: newBooking.end_date,
+          total_rent: parseFloat(newBooking.total_rent) || 0,
+          advance_paid: parseFloat(newBooking.advance_paid) || 0,
+          security_deposit: parseFloat(newBooking.security_deposit) || 0,
+          deposit_adjusted: true,
+          original_id_collected: newBooking.original_id_collected,
+          booking_status: 'confirmed'
+        }]);
+
+        if (!error) {
+          setShowBookingModal(false);
+          fetchData();
+        } else alert('Error saving booking: ' + error.message);
+      };
+
+      const handleMarkMaintenance = async (e) => {
+        e.preventDefault();
+        const { error } = await supabase.from('bookings').insert([{
+          vehicle_id: selectedSlot.vehicle.id,
+          customer_name: 'GARAGE MAINTENANCE',
+          customer_phone: 'N/A',
+          customer_whatsapp: 'N/A',
+          start_date: maintenanceRange.start_date,
+          end_date: maintenanceRange.end_date,
+          total_rent: 0,
+          advance_paid: 0,
+          security_deposit: 0,
+          booking_status: 'maintenance'
+        }]);
+
+        if (!error) {
+          setShowSlotActionModal(false);
+          fetchData();
+        } else alert('Error marking maintenance: ' + error.message);
+      };
+
+      const handleCancelMaintenance = async (maintenanceId) => {
+        if (confirm('Make this date slot available again?')) {
+          const { error } = await supabase.from('bookings').delete().eq('id', maintenanceId);
+          if (!error) fetchData();
+          else alert('Error: ' + error.message);
+        }
+      };
+
+      const sendWhatsAppInvoice = (booking, vehicle) => {
+        const due = Math.max(0, (booking.total_rent || 0) - (booking.advance_paid || 0));
+        const depositText = booking.security_deposit > 0 
+          ? `🔒 *Security Deposit:* ₹${booking.security_deposit} (Refundable upon vehicle return)\n` 
+          : ``;
+
+        const text = `*KD CAPTAIN - DURGA PUJA 2026 BOOKING CONFIRMATION*\n\n` +
+          `👤 *Customer Name:* ${booking.customer_name}\n` +
+          `🛵 *Vehicle Model:* ${vehicle ? vehicle.model_name : 'Scooty'} (${vehicle ? vehicle.registration_no || 'Assigned' : ''})\n` +
+          `📅 *Dates:* ${booking.start_date} to ${booking.end_date}\n` +
+          `💰 *Total Rental Charge:* ₹${booking.total_rent}\n` +
+          `💳 *Advance Received:* ₹${booking.advance_paid}\n` +
+          `🔴 *Due Balance at Handover:* ₹${due}\n` +
+          depositText +
+          `🪪 *Mandatory Document:* Original ID Proof must be submitted at pickup.\n\n` +
+          `Thank you for choosing KD Captain!`;
+        
+        const cleanNumber = booking.customer_whatsapp.replace(/\D/g, '');
+        window.open(`https://wa.me/${cleanNumber.length === 10 ? '91' + cleanNumber : cleanNumber}?text=${encodeURIComponent(text)}`, '_blank');
+      };
+
+      const getBookingForDate = (vehicleId, dateStr) => {
+        return bookings.find(b => b.vehicle_id === vehicleId && dateStr >= b.start_date && dateStr <= b.end_date);
+      };
+
+      const petrolVehicles = vehicles.filter(v => v.vehicle_type === 'petrol');
+      const evVehicles = vehicles.filter(v => v.vehicle_type === 'ev');
+
+      const renderGrid = (list, title, type, badgeColor) => (
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-8">
+          <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-blue-50/50">
+            <div className="flex items-center gap-3">
+              <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${badgeColor}`}>
+                {type.toUpperCase()}
+              </span>
+              <h2 className="text-base font-bold text-slate-800">{title}</h2>
+              <span className="text-xs text-slate-500 font-medium">({list.length} Vehicles)</span>
+            </div>
+            <button
+              onClick={() => { setVehicleTypeToAdd(type); setShowAddVehicleModal(true); }}
+              className="text-xs px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm transition flex items-center gap-1.5"
+            >
+              <i className="fa-solid fa-plus"></i> {type === 'petrol' ? t.addPetrol : t.addEv}
+            </button>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="bg-blue-100/70 text-blue-900 border-b border-blue-200 font-bold uppercase">
+                  <th className="p-3 sticky left-0 bg-blue-100 z-10 w-48 shadow-sm">{t.vehicle}</th>
+                  <th className="p-3 w-20">{t.rentPerDay}</th>
+                  {PUJA_SCHEDULE.map(item => (
+                    <th key={item.date} className="p-2 text-center min-w-[85px] border-l border-blue-200">
+                      <div className={`text-[10px] py-0.5 px-1 rounded border font-black tracking-tight mb-0.5 ${item.colorClass}`}>
+                        {item.label}
+                      </div>
+                      <div className="text-[11px] font-semibold text-slate-600">{item.date.slice(5)}</div>
+                    </th>
+                  ))}
+                  <th className="p-3 text-center w-20">{t.action}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {list.length === 0 ? (
+                  <tr>
+                    <td colSpan={PUJA_SCHEDULE.length + 3} className="p-6 text-center text-slate-400">
+                      No {type} vehicles added yet.
+                    </td>
+                  </tr>
+                ) : (
+                  list.map(v => {
+                    const isVehicleActive = v.is_active !== false;
+                    return (
+                      <tr key={v.id} className={`hover:bg-amber-50/40 transition ${!isVehicleActive ? 'bg-slate-100/70 opacity-70' : ''}`}>
+                        <td className="p-3 font-semibold text-slate-700 sticky left-0 bg-white z-10 shadow-sm border-r border-slate-200">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-blue-700 text-[13px]">{v.model_name}</span>
+                            <button
+                              onClick={() => handleToggleMasterVehicle(v)}
+                              className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase border ${isVehicleActive ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : 'bg-rose-50 text-rose-700 border-rose-300'}`}
+                              title="Toggle master garage status"
+                            >
+                              {isVehicleActive ? '● ON' : '○ OFF'}
+                            </button>
+                          </div>
+                          <div className="text-[10px] text-slate-400 font-normal">{v.registration_no || 'Reg Pending'}</div>
+                        </td>
+                        <td className="p-3 text-slate-600 font-medium">₹{v.daily_rent}</td>
+                        {PUJA_SCHEDULE.map(item => {
+                          const booking = getBookingForDate(v.id, item.date);
+                          const isMaintenance = booking && booking.booking_status === 'maintenance';
+
+                          return (
+                            <td key={item.date} className="p-1 border-l border-slate-100 text-center">
+                              {!isVehicleActive ? (
+                                <div className="py-1.5 px-1 bg-slate-200 text-slate-600 rounded text-[10px] font-medium">
+                                  {t.inGarage}
+                                </div>
+                              ) : isMaintenance ? (
+                                <button
+                                  onClick={() => handleCancelMaintenance(booking.id)}
+                                  className="w-full py-1.5 px-1 bg-amber-100 text-amber-800 border border-amber-300 rounded text-[10px] font-bold hover:bg-amber-200 transition"
+                                  title="Click to release from Garage"
+                                >
+                                  {t.garage}
+                                </button>
+                              ) : booking ? (
+                                <button
+                                  onClick={() => setSelectedBookingDetail({ booking, vehicle: v })}
+                                  className="w-full py-1.5 px-1 bg-rose-100 text-rose-800 border border-rose-300 rounded text-[11px] font-bold hover:bg-rose-200 transition shadow-xs"
+                                >
+                                  {t.booked}
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => {
+                                    setSelectedSlot({ vehicle: v, date: item.date });
+                                    setNewBooking({
+                                      customer_name: '', customer_phone: '', customer_whatsapp: '',
+                                      start_date: item.date, end_date: item.date,
+                                      total_rent: v.daily_rent, advance_paid: 0, due_amount: v.daily_rent,
+                                      security_deposit: '', original_id_collected: false
+                                    });
+                                    setMaintenanceRange({ start_date: item.date, end_date: item.date });
+                                    setShowSlotActionModal(true);
+                                  }}
+                                  className="w-full py-1.5 px-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded text-[11px] font-medium hover:bg-emerald-100 transition"
+                                >
+                                  {t.available}
+                                </button>
+                              )}
+                            </td>
+                          );
+                        })}
+                        <td className="p-2 text-center border-l border-slate-100">
+                          <button
+                            onClick={() => handleDeleteVehicle(v.id, v.model_name)}
+                            className="text-slate-400 hover:text-rose-600 p-1"
+                            title="Delete Vehicle"
+                          >
+                            <i className="fa-regular fa-trash-can"></i>
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      );
+
+      return (
+        <div className="min-h-screen p-4 md:p-8 max-w-[1600px] mx-auto">
+          {/* Header */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center pb-6 border-b border-slate-200 gap-4 mb-6">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="bg-blue-600 text-white font-black text-sm px-2 py-0.5 rounded shadow-sm">KD</span>
+                <h1 className="text-2xl font-black tracking-tight text-slate-900 uppercase">KD Captain</h1>
+              </div>
+              <p className="text-xs text-slate-500 mt-1 font-medium">{t.subtitle}</p>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              {/* Language Switcher */}
+              <div className="flex bg-slate-200 p-0.5 rounded-lg text-xs font-bold">
+                <button
+                  onClick={() => setLang('en')}
+                  className={`px-2.5 py-1 rounded-md transition ${lang === 'en' ? 'bg-white text-blue-700 shadow-xs' : 'text-slate-600'}`}
+                >
+                  EN
+                </button>
+                <button
+                  onClick={() => setLang('hi')}
+                  className={`px-2.5 py-1 rounded-md transition ${lang === 'hi' ? 'bg-white text-blue-700 shadow-xs' : 'text-slate-600'}`}
+                >
+                  हिन्दी
+                </button>
+              </div>
+
+              <button
+                onClick={() => setActiveTab('timeline')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${activeTab === 'timeline' ? 'bg-blue-600 text-white shadow-sm' : 'bg-white border text-slate-700 hover:bg-slate-50'}`}
+              >
+                <i className="fa-solid fa-calendar-days"></i> {t.tabTimeline}
+              </button>
+              <button
+                onClick={() => setActiveTab('customers')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${activeTab === 'customers' ? 'bg-blue-600 text-white shadow-sm' : 'bg-white border text-slate-700 hover:bg-slate-50'}`}
+              >
+                <i className="fa-solid fa-users"></i> {t.tabCustomers} ({validBookings.length})
+              </button>
+            </div>
+          </div>
+
+          {/* Revenue Analytics Cards & Pie Charts */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <div className="bg-white p-5 rounded-xl border border-blue-200 shadow-sm flex flex-col justify-between">
+              <div>
+                <span className="text-[11px] font-bold tracking-wider text-blue-600 uppercase">{t.totalRevenue}</span>
+                <div className="text-2xl font-black text-slate-900 mt-2">₹{totalRevenue.toLocaleString()}</div>
+              </div>
+              <p className="text-[10px] text-slate-400 mt-2">10 Oct to 20 Oct Fleet Booking</p>
+            </div>
+
+            <div className="bg-white p-5 rounded-xl border border-emerald-200 shadow-sm flex flex-col justify-between">
+              <div>
+                <span className="text-[11px] font-bold tracking-wider text-emerald-600 uppercase">{t.totalCollected}</span>
+                <div className="text-2xl font-black text-emerald-600 mt-2">₹{totalCollected.toLocaleString()}</div>
+              </div>
+              <p className="text-[10px] text-slate-400 mt-2">Advance collected in cash/online</p>
+            </div>
+
+            <div className="bg-white p-5 rounded-xl border border-rose-200 shadow-sm flex flex-col justify-between">
+              <div>
+                <span className="text-[11px] font-bold tracking-wider text-rose-600 uppercase">{t.totalDue}</span>
+                <div className="text-2xl font-black text-rose-600 mt-2">₹{totalDue.toLocaleString()}</div>
+              </div>
+              <p className="text-[10px] text-slate-400 mt-2">To be collected at vehicle delivery</p>
+            </div>
+
+            <div className="bg-white p-5 rounded-xl border border-amber-200 shadow-sm flex flex-col justify-between">
+              <div>
+                <span className="text-[11px] font-bold tracking-wider text-amber-600 uppercase">{t.fleetStrength}</span>
+                <div className="text-2xl font-black text-slate-900 mt-2">{vehicles.length} Total</div>
+              </div>
+              <p className="text-[10px] text-slate-400 mt-2">
+                {vehicles.filter(v => v.is_active !== false).length} Active • {vehicles.filter(v => v.is_active === false).length} In Garage
+              </p>
+            </div>
+          </div>
+
+          {/* Visual Pie Charts Section */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col items-center">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">Collection vs Due Breakdown</h3>
+              <div className="h-44 w-full relative">
+                <canvas ref={revenueChartRef}></canvas>
+              </div>
+            </div>
+            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col items-center">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">Petrol vs EV Revenue Share</h3>
+              <div className="h-44 w-full relative">
+                <canvas ref={fleetChartRef}></canvas>
+              </div>
+            </div>
+          </div>
+
+          {/* Main Tab Content */}
+          {loading ? (
+            <div className="p-12 text-center text-slate-400">Loading Fleet & Booking Data...</div>
+          ) : activeTab === 'timeline' ? (
+            <div>
+              {renderGrid(petrolVehicles, t.petrolGrid, 'petrol', 'bg-amber-100 text-amber-800')}
+              {renderGrid(evVehicles, t.evGrid, 'ev', 'bg-cyan-100 text-cyan-800')}
+            </div>
+          ) : (
+            /* Customer Database Tab */
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-8">
+              <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+                <h2 className="text-base font-bold text-slate-800">📁 {t.tabCustomers}</h2>
+                <span className="text-xs font-semibold text-slate-500">Total: {validBookings.length}</span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-blue-100/70 text-blue-900 border-b border-blue-200 font-bold uppercase">
+                      <th className="p-3 w-12 text-center">SL</th>
+                      <th className="p-3">Customer Name</th>
+                      <th className="p-3">Contact</th>
+                      <th className="p-3">Vehicle Assigned</th>
+                      <th className="p-3">Period</th>
+                      <th className="p-3 text-right">Total Rent</th>
+                      <th className="p-3 text-right">Advance (উঠেছে)</th>
+                      <th className="p-3 text-right">Due (বাকি)</th>
+                      <th className="p-3 text-center">Security Dep.</th>
+                      <th className="p-3 text-center">ID Proof</th>
+                      <th className="p-3 text-center">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {validBookings.length === 0 ? (
+                      <tr>
+                        <td colSpan="11" className="p-8 text-center text-slate-400">No active customer bookings recorded yet.</td>
+                      </tr>
+                    ) : (
+                      validBookings.map((b, index) => {
+                        const veh = vehicles.find(v => v.id === b.vehicle_id);
+                        const due = Math.max(0, (b.total_rent || 0) - (b.advance_paid || 0));
+                        return (
+                          <tr key={b.id} className="hover:bg-slate-50 transition">
+                            <td className="p-3 text-center font-bold text-slate-400">{index + 1}</td>
+                            <td className="p-3 font-bold text-slate-800">{b.customer_name}</td>
+                            <td className="p-3">
+                              <div>{b.customer_phone}</div>
+                              <div className="text-[10px] text-emerald-600 font-medium">WA: {b.customer_whatsapp}</div>
+                            </td>
+                            <td className="p-3">
+                              <span className="font-semibold text-blue-700">{veh ? veh.model_name : 'Scooty'}</span>
+                              <span className="text-[10px] text-slate-400 block">{veh ? veh.vehicle_type.toUpperCase() : ''}</span>
+                            </td>
+                            <td className="p-3">
+                              <span className="font-medium text-slate-700">{b.start_date.slice(5)} to {b.end_date.slice(5)}</span>
+                            </td>
+                            <td className="p-3 text-right font-bold text-slate-900">₹{b.total_rent}</td>
+                            <td className="p-3 text-right font-bold text-emerald-600">₹{b.advance_paid}</td>
+                            <td className="p-3 text-right font-bold text-rose-600">₹{due}</td>
+                            <td className="p-3 text-center text-amber-700 font-semibold">{b.security_deposit ? `₹${b.security_deposit}` : 'N/A'}</td>
+                            <td className="p-3 text-center">{b.original_id_collected ? '✅ Yes' : '⏳ No'}</td>
+                            <td className="p-3 text-center">
+                              <div className="flex items-center justify-center gap-1.5">
+                                <button
+                                  onClick={() => sendWhatsAppInvoice(b, veh)}
+                                  className="p-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded transition"
+                                  title="WhatsApp Invoice"
+                                >
+                                  <i className="fa-brands fa-whatsapp text-sm"></i>
+                                </button>
+                                <button
+                                  onClick={() => setShowInvoiceModal({ booking: b, vehicle: veh || { model_name: 'Scooty', vehicle_type: 'petrol', registration_no: '' } })}
+                                  className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded transition"
+                                  title="Print Bill"
+                                >
+                                  <i className="fa-solid fa-print text-sm"></i>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Modal: Slot Action Choice (Booking vs Maintenance) */}
+          {showSlotActionModal && selectedSlot && (
+            <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+              <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6 border border-slate-200">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-base font-bold text-slate-800">{selectedSlot.vehicle.model_name}</h3>
+                  <button onClick={() => setShowSlotActionModal(false)} className="text-slate-400 hover:text-slate-600">
+                    <i className="fa-solid fa-xmark text-lg"></i>
+                  </button>
+                </div>
+                <p className="text-xs text-slate-500 mb-5">Date Selected: <span className="font-bold text-blue-600">{selectedSlot.date}</span></p>
+                <div className="space-y-3">
+                  <button
+                    onClick={() => { setShowSlotActionModal(false); setShowBookingModal(true); }}
+                    className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg text-xs flex items-center justify-center gap-2 shadow-sm transition"
+                  >
+                    <i className="fa-solid fa-user-plus"></i> New Customer Booking
+                  </button>
+                  <form onSubmit={handleMarkMaintenance} className="pt-3 border-t space-y-2">
+                    <span className="block text-[11px] font-bold text-amber-700">Block for Garage / Maintenance</span>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <label className="text-[10px] text-slate-500">From</label>
+                        <input
+                          type="date"
+                          value={maintenanceRange.start_date}
+                          onChange={e => setMaintenanceRange({ ...maintenanceRange, start_date: e.target.value })}
+                          className="w-full p-1.5 border rounded"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-slate-500">To</label>
+                        <input
+                          type="date"
+                          value={maintenanceRange.end_date}
+                          onChange={e => setMaintenanceRange({ ...maintenanceRange, end_date: e.target.value })}
+                          className="w-full p-1.5 border rounded"
+                        />
+                      </div>
+                    </div>
+                    <button
+                      type="submit"
+                      className="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white font-medium rounded-lg text-xs transition"
+                    >
+                      Confirm Garage Block
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Modal: Add Vehicle */}
+          {showAddVehicleModal && (
+            <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+              <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 border border-slate-200">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-base font-bold text-slate-800">Add New {vehicleTypeToAdd.toUpperCase()} Vehicle</h3>
+                  <button onClick={() => setShowAddVehicleModal(false)} className="text-slate-400 hover:text-slate-600">
+                    <i className="fa-solid fa-xmark text-lg"></i>
+                  </button>
+                </div>
+                <form onSubmit={handleAddVehicle} className="space-y-4 text-xs">
+                  <div>
+                    <label className="block font-medium text-slate-700 mb-1">Vehicle / Model Name</label>
+                    <input
+                      required
+                      placeholder="e.g. Activa 6G, Jupiter 125, Ola S1 Pro"
+                      value={newVehicle.model_name}
+                      onChange={e => setNewVehicle({ ...newVehicle, model_name: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-medium text-slate-700 mb-1">Registration No. (Optional)</label>
+                    <input
+                      placeholder="e.g. WB-01-XXXX"
+                      value={newVehicle.registration_no}
+                      onChange={e => setNewVehicle({ ...newVehicle, registration_no: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-medium text-slate-700 mb-1">Daily Rent (₹)</label>
+                    <input
+                      type="number"
+                      required
+                      placeholder="e.g. 800"
+                      value={newVehicle.daily_rent}
+                      onChange={e => setNewVehicle({ ...newVehicle, daily_rent: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2 pt-2">
+                    <button type="button" onClick={() => setShowAddVehicleModal(false)} className="px-4 py-2 bg-slate-100 rounded-lg font-medium text-slate-600">Cancel</button>
+                    <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium shadow-sm hover:bg-blue-700">Save Vehicle</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Modal: New Booking */}
+          {showBookingModal && selectedSlot && (
+            <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+              <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6 border border-slate-200">
+                <div className="flex justify-between items-center mb-4">
+                  <div>
+                    <h3 className="text-base font-bold text-slate-800">New Booking: {selectedSlot.vehicle.model_name}</h3>
+                    <p className="text-xs text-slate-500">{selectedSlot.vehicle.vehicle_type.toUpperCase()} | ₹{selectedSlot.vehicle.daily_rent}/day</p>
+                  </div>
+                  <button onClick={() => setShowBookingModal(false)} className="text-slate-400 hover:text-slate-600">
+                    <i className="fa-solid fa-xmark text-lg"></i>
+                  </button>
+                </div>
+                <form onSubmit={handleAddBooking} className="space-y-3 text-xs">
+                  <div>
+                    <label className="block font-medium text-slate-700 mb-1">Customer Full Name</label>
+                    <input
+                      required
+                      placeholder="Enter customer name"
+                      value={newBooking.customer_name}
+                      onChange={e => setNewBooking({ ...newBooking, customer_name: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block font-medium text-slate-700 mb-1">Primary Phone</label>
+                      <input
+                        required
+                        placeholder="Phone number"
+                        value={newBooking.customer_phone}
+                        onChange={e => setNewBooking({ ...newBooking, customer_phone: e.target.value })}
+                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-medium text-slate-700 mb-1">WhatsApp Number</label>
+                      <input
+                        required
+                        placeholder="WhatsApp number"
+                        value={newBooking.customer_whatsapp}
+                        onChange={e => setNewBooking({ ...newBooking, customer_whatsapp: e.target.value })}
+                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block font-medium text-slate-700 mb-1">Start Date</label>
+                      <input
+                        type="date"
+                        required
+                        value={newBooking.start_date}
+                        onChange={e => {
+                          const val = e.target.value;
+                          setNewBooking(prev => ({ ...prev, start_date: val }));
+                          autoCalculateAmounts(val, newBooking.end_date, newBooking.advance_paid, selectedSlot.vehicle.daily_rent);
+                        }}
+                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-medium text-slate-700 mb-1">End Date</label>
+                      <input
+                        type="date"
+                        required
+                        value={newBooking.end_date}
+                        onChange={e => {
+                          const val = e.target.value;
+                          setNewBooking(prev => ({ ...prev, end_date: val }));
+                          autoCalculateAmounts(newBooking.start_date, val, newBooking.advance_paid, selectedSlot.vehicle.daily_rent);
+                        }}
+                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className="block font-medium text-slate-700 mb-1">Total Rent (Auto)</label>
+                      <input
+                        type="number"
+                        readOnly
+                        value={newBooking.total_rent}
+                        className="w-full px-3 py-2 border rounded-lg bg-blue-50 font-bold text-blue-700 outline-none cursor-not-allowed"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-medium text-slate-700 mb-1">Advance Paid (উঠেছে)</label>
+                      <input
+                        type="number"
+                        placeholder="e.g. 1000"
+                        value={newBooking.advance_paid}
+                        onChange={e => {
+                          const val = e.target.value;
+                          const adv = parseFloat(val) || 0;
+                          setNewBooking(prev => ({
+                            ...prev,
+                            advance_paid: val,
+                            due_amount: Math.max(0, (prev.total_rent || 0) - adv)
+                          }));
+                        }}
+                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 font-bold text-emerald-700 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-medium text-slate-700 mb-1">Due Amount (বাকি)</label>
+                      <input
+                        type="number"
+                        readOnly
+                        value={newBooking.due_amount}
+                        className="w-full px-3 py-2 border rounded-lg bg-rose-50 font-bold text-rose-700 outline-none cursor-not-allowed"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block font-medium text-slate-700 mb-1">Security Deposit (₹) <span className="text-slate-400 font-normal">(Optional)</span></label>
+                    <input
+                      type="number"
+                      placeholder="Leave empty or enter amount (e.g. 1000)"
+                      value={newBooking.security_deposit}
+                      onChange={e => setNewBooking({ ...newBooking, security_deposit: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-amber-500 outline-none"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-1">
+                    <input
+                      type="checkbox"
+                      id="origId"
+                      checked={newBooking.original_id_collected}
+                      onChange={e => setNewBooking({ ...newBooking, original_id_collected: e.target.checked })}
+                      className="rounded text-blue-600"
+                    />
+                    <label htmlFor="origId" className="text-slate-700">Original ID Proof collected</label>
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-3">
+                    <button type="button" onClick={() => setShowBookingModal(false)} className="px-4 py-2 bg-slate-100 rounded-lg font-medium text-slate-600">Cancel</button>
+                    <button type="submit" className="px-4 py-2 bg-emerald-600 text-white rounded-lg font-medium shadow-sm hover:bg-emerald-700">Confirm Booking</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Modal: View Booking Details */}
+          {selectedBookingDetail && (
+            <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+              <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 border border-slate-200">
+                <div className="flex justify-between items-center mb-4 pb-2 border-b">
+                  <h3 className="text-base font-bold text-slate-800">Booking Summary</h3>
+                  <button onClick={() => setSelectedBookingDetail(null)} className="text-slate-400 hover:text-slate-600">
+                    <i className="fa-solid fa-xmark text-lg"></i>
+                  </button>
+                </div>
+                <div className="space-y-2.5 text-xs text-slate-700">
+                  <div className="flex justify-between py-1 border-b border-slate-100">
+                    <span className="text-slate-500">Customer Name:</span>
+                    <span className="font-bold">{selectedBookingDetail.booking.customer_name}</span>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-slate-100">
+                    <span className="text-slate-500">Contact Number:</span>
+                    <span>{selectedBookingDetail.booking.customer_phone}</span>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-slate-100">
+                    <span className="text-slate-500">WhatsApp:</span>
+                    <span>{selectedBookingDetail.booking.customer_whatsapp}</span>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-slate-100">
+                    <span className="text-slate-500">Vehicle Assigned:</span>
+                    <span className="font-semibold text-blue-700">{selectedBookingDetail.vehicle.model_name}</span>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-slate-100">
+                    <span className="text-slate-500">Booking Period:</span>
+                    <span className="font-medium text-blue-600">{selectedBookingDetail.booking.start_date} to {selectedBookingDetail.booking.end_date}</span>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-slate-100">
+                    <span className="text-slate-500">Total Rental Charge:</span>
+                    <span className="font-bold">₹{selectedBookingDetail.booking.total_rent}</span>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-slate-100">
+                    <span className="text-slate-500">Advance Paid (উঠেছে):</span>
+                    <span className="font-bold text-emerald-600">₹{selectedBookingDetail.booking.advance_paid}</span>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-slate-100">
+                    <span className="text-slate-500">Remaining Balance (বাকি):</span>
+                    <span className="font-bold text-rose-600">₹{Math.max(0, (selectedBookingDetail.booking.total_rent || 0) - (selectedBookingDetail.booking.advance_paid || 0))}</span>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-slate-100">
+                    <span className="text-slate-500">Security Deposit:</span>
+                    <span className="font-bold text-amber-600">{selectedBookingDetail.booking.security_deposit ? `₹${selectedBookingDetail.booking.security_deposit}` : 'N/A'}</span>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-slate-100">
+                    <span className="text-slate-500">Original ID Submitted:</span>
+                    <span>{selectedBookingDetail.booking.original_id_collected ? '✅ Yes' : '⏳ Pending'}</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2 pt-5">
+                  <button
+                    onClick={() => sendWhatsAppInvoice(selectedBookingDetail.booking, selectedBookingDetail.vehicle)}
+                    className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg text-xs flex items-center justify-center gap-2 shadow-sm transition"
+                  >
+                    <i className="fa-brands fa-whatsapp text-sm"></i> Send WhatsApp Confirmation
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowInvoiceModal(selectedBookingDetail);
+                      setSelectedBookingDetail(null);
+                    }}
+                    className="w-full py-2 bg-slate-800 hover:bg-slate-900 text-white font-medium rounded-lg text-xs flex items-center justify-center gap-2 shadow-sm transition"
+                  >
+                    <i className="fa-solid fa-file-invoice text-sm"></i> View / Print Official Bill
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Modal: Printable Invoice */}
+          {showInvoiceModal && (
+            <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
+              <div className="bg-white rounded-xl shadow-2xl max-w-xl w-full p-8 border border-slate-200">
+                <div id="printable-invoice" className="text-slate-800 text-xs">
+                  {/* Bill Header */}
+                  <div className="border-b-2 border-slate-800 pb-4 mb-4 flex justify-between items-start">
+                    <div>
+                      <h1 className="text-xl font-black tracking-tight text-slate-900">KD CAPTAIN</h1>
+                      <p className="text-[10px] text-slate-500">Two-Wheeler Rental Service | Durga Puja 2026</p>
+                      <p className="text-[10px] text-slate-500">Kolkata / Delhi</p>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-base font-bold text-slate-700">RENTAL RECEIPT</div>
+                      <div className="text-[10px] text-slate-400">Date: {new Date().toLocaleDateString()}</div>
+                    </div>
+                  </div>
+
+                  {/* Customer & Vehicle Details */}
+                  <div className="grid grid-cols-2 gap-4 mb-4 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                    <div>
+                      <div className="text-[10px] uppercase font-bold text-slate-400">Customer Details</div>
+                      <div className="font-bold text-slate-800">{showInvoiceModal.booking.customer_name}</div>
+                      <div>Phone: {showInvoiceModal.booking.customer_phone}</div>
+                      <div>WhatsApp: {showInvoiceModal.booking.customer_whatsapp}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] uppercase font-bold text-slate-400">Vehicle Assigned</div>
+                      <div className="font-bold text-slate-800">{showInvoiceModal.vehicle.model_name}</div>
+                      <div>Type: {showInvoiceModal.vehicle.vehicle_type.toUpperCase()}</div>
+                      <div>Reg No: {showInvoiceModal.vehicle.registration_no || 'TBA'}</div>
+                    </div>
+                  </div>
+
+                  {/* Rental Schedule & Pricing */}
+                  <table className="w-full mb-4 border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-200 text-slate-500 text-[10px] uppercase">
+                        <th className="py-2 text-left">Description</th>
+                        <th className="py-2 text-right">Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 font-medium">
+                      <tr>
+                        <td className="py-2">Booking Period: {showInvoiceModal.booking.start_date} to {showInvoiceModal.booking.end_date}</td>
+                        <td className="py-2 text-right">₹{showInvoiceModal.booking.total_rent}</td>
+                      </tr>
+                      <tr>
+                        <td className="py-2 text-slate-500">Advance Paid (Collected)</td>
+                        <td className="py-2 text-right text-emerald-600">- ₹{showInvoiceModal.booking.advance_paid || 0}</td>
+                      </tr>
+                      {showInvoiceModal.booking.security_deposit > 0 && (
+                        <tr>
+                          <td className="py-2 text-slate-500">Security Deposit (Refundable)</td>
+                          <td className="py-2 text-right text-amber-600">₹{showInvoiceModal.booking.security_deposit}</td>
+                        </tr>
+                      )}
+                      <tr className="font-bold text-slate-900 border-t border-slate-300">
+                        <td className="py-2">Remaining Rent to Pay (Due at Handover)</td>
+                        <td className="py-2 text-right text-rose-600">₹{Math.max(0, (showInvoiceModal.booking.total_rent || 0) - (showInvoiceModal.booking.advance_paid || 0))}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  {/* Mandatory Terms & Conditions in English */}
+                  <div className="border border-slate-200 rounded-lg p-3 bg-slate-50 space-y-1.5 text-[10px] text-slate-600 leading-relaxed mb-6">
+                    <div className="font-bold text-slate-800 mb-1">TERMS & CONDITIONS:</div>
+                    {showInvoiceModal.booking.security_deposit > 0 && (
+                      <div>1. <strong>Security Deposit:</strong> A security deposit of ₹{showInvoiceModal.booking.security_deposit} is held for the duration of the rental. It will be 100% refunded upon the safe return of the vehicle without any damages.</div>
+                    )}
+                    <div>2. <strong>Payment Settlement:</strong> The due balance must be fully cleared before the keys are handed over on the pickup date.</div>
+                    <div>3. <strong>Identity Proof:</strong> Submission of an Original Government Identity Proof is mandatory at the time of vehicle pickup for verification and security records.</div>
+                    <div>4. <strong>Safe Operation:</strong> The hirer is fully liable for any traffic fines, speed violations, or accidental damage incurred during the rental tenure.</div>
+                  </div>
+
+                  <div className="flex justify-between items-end pt-4 border-t border-slate-200 text-[10px]">
+                    <div>
+                      <p className="text-slate-400">Authorized Signature</p>
+                      <p className="font-bold mt-4">KD Captain Management</p>
+                    </div>
+                    <div>
+                      <p className="text-slate-400">Customer Signature</p>
+                      <p className="font-bold mt-4">_______________________</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-slate-200">
+                  <button onClick={() => setShowInvoiceModal(null)} className="px-4 py-2 bg-slate-100 rounded-lg text-xs font-medium text-slate-600">Close</button>
+                  <button onClick={() => window.print()} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-medium shadow-sm hover:bg-blue-700 flex items-center gap-1.5">
+                    <i className="fa-solid fa-print"></i> Print Bill (PDF)
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
