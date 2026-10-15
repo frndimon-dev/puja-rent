@@ -96,6 +96,22 @@
       }
     };
 
+    // Safe Cross-Platform Storage Helper
+    const safeGetStorage = (key) => {
+      try {
+        const item = localStorage.getItem(key);
+        return item ? JSON.parse(item) : {};
+      } catch (e) {
+        return {};
+      }
+    };
+
+    const safeSetStorage = (key, val) => {
+      try {
+        localStorage.setItem(key, JSON.stringify(val));
+      } catch (e) {}
+    };
+
     function App() {
       const [lang, setLang] = useState('en');
       const t = TRANSLATIONS[lang];
@@ -107,23 +123,10 @@
       const [bookings, setBookings] = useState([]);
       const [loading, setLoading] = useState(true);
 
-      // Local Garage Tracking: Master & Date-Level
-      const [masterGarageMap, setMasterGarageMap] = useState(() => {
-        try { return JSON.parse(localStorage.getItem('kd_master_garage_map') || '{}'); } catch(e) { return {}; }
-      });
-      const [dateGarageMap, setDateGarageMap] = useState(() => {
-        try { return JSON.parse(localStorage.getItem('kd_date_garage_map') || '{}'); } catch(e) { return {}; }
-      });
-
-      // Cell Manual Overrides: { "vehicleId_date_shift": "available" | "booked" }
-      const [cellOverrideMap, setCellOverrideMap] = useState(() => {
-        try { return JSON.parse(localStorage.getItem('kd_cell_override_map') || '{}'); } catch(e) { return {}; }
-      });
-
-      // Local Metadata Map (Booking Date & Preferred Model & Exact Multi-Slots)
-      const [bookingMetaMap, setBookingMetaMap] = useState(() => {
-        try { return JSON.parse(localStorage.getItem('kd_booking_meta_map') || '{}'); } catch(e) { return {}; }
-      });
+      // Fast Local UI State Fallbacks
+      const [masterGarageMap, setMasterGarageMap] = useState(() => safeGetStorage('kd_master_garage_map'));
+      const [dateGarageMap, setDateGarageMap] = useState(() => safeGetStorage('kd_date_garage_map'));
+      const [cellOverrideMap, setCellOverrideMap] = useState(() => safeGetStorage('kd_cell_override_map'));
 
       // Modals
       const [showAddVehicleModal, setShowAddVehicleModal] = useState(false);
@@ -171,7 +174,7 @@
           setVehicles(vData || []);
           setBookings(bData || []);
         } catch (err) {
-          console.error(err);
+          console.error("Database fetch error:", err);
         } finally {
           setLoading(false);
         }
@@ -245,6 +248,27 @@
         }
       }, [bookings, vehicles, loading, activeTab, activeDashboardFleet]);
 
+      // Decode Meta Stored Safely in DB Phone String
+      const parseBookingDetails = (booking) => {
+        let phone = booking.customer_phone || '';
+        let booking_date = (booking.created_at ? booking.created_at.split('T')[0] : '2026-10-08');
+        let preferred_model = '';
+        let slots = [{ start_date: booking.start_date, end_date: booking.end_date, shift: 'FULL' }];
+
+        if (phone.includes('#')) {
+          const parts = phone.split('#');
+          phone = parts[0];
+          try {
+            const meta = JSON.parse(decodeURIComponent(parts[1]));
+            if (meta.booking_date) booking_date = meta.booking_date;
+            if (meta.preferred_model) preferred_model = meta.preferred_model;
+            if (meta.slots && Array.isArray(meta.slots)) slots = meta.slots;
+          } catch(e) {}
+        }
+
+        return { phone, booking_date, preferred_model, slots };
+      };
+
       // Overlap Checker across multi-slots
       const checkSlotOverlaps = (slots) => {
         for (let i = 0; i < slots.length; i++) {
@@ -314,41 +338,35 @@
         calculateMultiSlotAmounts(updatedSlots, newBooking.daily_rate, newBooking.advance_paid);
       };
 
-      // Precise Date & Shift Matching (In-Cell Morning/Evening Split)
+      // Precise Date & Shift Matching
       const getBookingForShift = (vehicleId, dateStr, shiftType) => {
         return activeBookings.find(b => {
           if (b.vehicle_id !== vehicleId) return false;
-          const meta = bookingMetaMap[b.id];
-          if (meta && meta.slots && Array.isArray(meta.slots) && meta.slots.length > 0) {
-            return meta.slots.some(s => {
-              if (dateStr >= s.start_date && dateStr <= s.end_date) {
-                if (s.shift === 'FULL') return true;
-                return s.shift === shiftType;
-              }
-              return false;
-            });
-          }
-          return dateStr >= b.start_date && dateStr <= b.end_date;
+          const { slots } = parseBookingDetails(b);
+          return slots.some(s => {
+            if (dateStr >= s.start_date && dateStr <= s.end_date) {
+              if (s.shift === 'FULL') return true;
+              return s.shift === shiftType;
+            }
+            return false;
+          });
         });
       };
 
       // Format Multi-Date Slots with Shifts for Display
       const formatSlotDates = (booking) => {
-        const meta = bookingMetaMap[booking.id];
-        if (meta && meta.slots && Array.isArray(meta.slots) && meta.slots.length > 0) {
-          return meta.slots.map(s => {
-            const shiftTag = s.shift === 'FULL' ? '' : ` (${s.shift})`;
-            return `${s.start_date.slice(5)} to ${s.end_date.slice(5)}${shiftTag}`;
-          }).join(' & ');
-        }
-        return `${booking.start_date.slice(5)} to ${booking.end_date.slice(5)}`;
+        const { slots } = parseBookingDetails(booking);
+        return slots.map(s => {
+          const shiftTag = s.shift === 'FULL' ? '' : ` (${s.shift})`;
+          return `${s.start_date.slice(5)} to ${s.end_date.slice(5)}${shiftTag}`;
+        }).join(' & ');
       };
 
       // Toggle Master Garage (Entire row on/off)
       const toggleMasterGarage = (vehicleId) => {
         const nextMap = { ...masterGarageMap, [vehicleId]: !masterGarageMap[vehicleId] };
         setMasterGarageMap(nextMap);
-        localStorage.setItem('kd_master_garage_map', JSON.stringify(nextMap));
+        safeSetStorage('kd_master_garage_map', nextMap);
       };
 
       // 1-Click Toggle Specific Date Garage
@@ -356,7 +374,7 @@
         const key = `${vehicleId}_${dateStr}`;
         const nextMap = { ...dateGarageMap, [key]: !dateGarageMap[key] };
         setDateGarageMap(nextMap);
-        localStorage.setItem('kd_date_garage_map', JSON.stringify(nextMap));
+        safeSetStorage('kd_date_garage_map', nextMap);
         setShowSlotActionModal(false);
       };
 
@@ -370,7 +388,7 @@
           nextMap[key] = status;
         }
         setCellOverrideMap(nextMap);
-        localStorage.setItem('kd_cell_override_map', JSON.stringify(nextMap));
+        safeSetStorage('kd_cell_override_map', nextMap);
         setShowSlotActionModal(false);
         setSelectedBookingDetail(null);
       };
@@ -433,7 +451,7 @@
         }
       };
 
-      // Save Booking with Mandatory 10-Digit Mobile Validation & Slot Metadata Persistence
+      // Save Booking: 100% Cloud-Synced via DB Phone Metadata
       const handleSaveBooking = async (e) => {
         e.preventDefault();
 
@@ -451,10 +469,18 @@
         const firstSlot = newBooking.slots[0];
         const lastSlot = newBooking.slots[newBooking.slots.length - 1];
 
+        // Store metadata inside DB string to ensure 100% Cross-Device Sync (Android, iOS, iPad)
+        const metaObj = {
+          booking_date: newBooking.booking_date,
+          preferred_model: newBooking.preferred_model ? newBooking.preferred_model.trim() : '',
+          slots: newBooking.slots
+        };
+        const syncedPhoneString = `${phoneClean}#${encodeURIComponent(JSON.stringify(metaObj))}`;
+
         const payload = {
           vehicle_id: selectedSlot.vehicle.id,
           customer_name: newBooking.customer_name.trim(),
-          customer_phone: phoneClean,
+          customer_phone: syncedPhoneString,
           customer_whatsapp: newBooking.customer_whatsapp.replace(/\D/g, '') || phoneClean,
           start_date: firstSlot.start_date,
           end_date: lastSlot.end_date || firstSlot.end_date,
@@ -467,30 +493,13 @@
         };
 
         let res;
-        let savedId;
         if (editingBookingId) {
           res = await supabase.from('bookings').update(payload).eq('id', editingBookingId);
-          savedId = editingBookingId;
         } else {
-          res = await supabase.from('bookings').insert([payload]).select();
-          if (res.data && res.data[0]) {
-            savedId = res.data[0].id;
-          }
+          res = await supabase.from('bookings').insert([payload]);
         }
 
         if (!res.error) {
-          if (savedId) {
-            const nextMap = {
-              ...bookingMetaMap,
-              [savedId]: {
-                booking_date: newBooking.booking_date,
-                preferred_model: newBooking.preferred_model ? newBooking.preferred_model.trim() : '',
-                slots: newBooking.slots
-              }
-            };
-            setBookingMetaMap(nextMap);
-            localStorage.setItem('kd_booking_meta_map', JSON.stringify(nextMap));
-          }
           setShowBookingModal(false);
           setEditingBookingId(null);
           fetchData();
@@ -504,10 +513,7 @@
         setSelectedSlot({ vehicle, date: booking.start_date });
         setEditingBookingId(booking.id);
 
-        const meta = bookingMetaMap[booking.id] || {};
-        const slots = (meta.slots && Array.isArray(meta.slots) && meta.slots.length > 0)
-          ? meta.slots
-          : [{ start_date: booking.start_date, end_date: booking.end_date, shift: 'FULL' }];
+        const { phone, booking_date, preferred_model, slots } = parseBookingDetails(booking);
 
         let totalDays = 0;
         slots.forEach(s => {
@@ -518,15 +524,12 @@
         });
         const inferredRate = totalDays > 0 ? Math.round((booking.total_rent || 800) / totalDays) : 800;
 
-        const savedBookingDate = meta.booking_date || (booking.created_at ? booking.created_at.split('T')[0] : '2026-10-08');
-        const savedPreferred = meta.preferred_model || '';
-
         setNewBooking({
           customer_name: booking.customer_name || '',
-          customer_phone: booking.customer_phone || '',
-          customer_whatsapp: booking.customer_whatsapp || '',
-          booking_date: savedBookingDate,
-          preferred_model: savedPreferred,
+          customer_phone: phone,
+          customer_whatsapp: booking.customer_whatsapp || phone,
+          booking_date: booking_date,
+          preferred_model: preferred_model,
           daily_rate: inferredRate.toString(),
           slots,
           total_rent: booking.total_rent || 0,
@@ -596,7 +599,7 @@
         }
       };
 
-      // Generic vehicle category display (No individual model leak on documents)
+      // Generic vehicle category display
       const getGenericCategoryName = (vehicle) => {
         if (!vehicle) return "Scooter";
         return vehicle.vehicle_type === 'ev' ? "Electric Scooter (EV Fleet)" : "Petrol Scooty (Standard 110cc-125cc)";
@@ -606,13 +609,12 @@
       const sendWhatsAppInvoice = (booking, vehicle) => {
         const due = Math.max(0, (booking.total_rent || 0) - (booking.advance_paid || 0));
         const depositAmount = booking.security_deposit || 1000;
-        const meta = bookingMetaMap[booking.id] || {};
-        const recordedBookingDate = meta.booking_date || (booking.created_at ? booking.created_at.split('T')[0] : '2026-10-08');
+        const { phone, booking_date } = parseBookingDetails(booking);
         const genericVehicle = getGenericCategoryName(vehicle);
 
         const text = `*KD CAPTAIN - DURGA PUJA 2026 BOOKING CONFIRMATION*\n\n` +
           `👤 *Customer Name:* ${booking.customer_name}\n` +
-          `📝 *Booking Date:* ${recordedBookingDate}\n` +
+          `📝 *Booking Date:* ${booking_date}\n` +
           `🛵 *Vehicle Assigned:* ${genericVehicle}\n` +
           `📅 *Rental Period:* ${formatSlotDates(booking)}\n` +
           `💰 *Total Rental Charge:* ₹${booking.total_rent}\n` +
@@ -626,7 +628,7 @@
           `4. *Traffic & Liability:* Hirer is completely liable for any traffic violations, fines, or accidental damages.\n\n` +
           `Thank you for choosing KD Captain!`;
 
-        const cleanNumber = (booking.customer_whatsapp || booking.customer_phone).replace(/\D/g, '');
+        const cleanNumber = (booking.customer_whatsapp || phone).replace(/\D/g, '');
         window.open(`https://wa.me/${cleanNumber.length === 10 ? '91' + cleanNumber : cleanNumber}?text=${encodeURIComponent(text)}`, '_blank');
       };
 
@@ -963,7 +965,7 @@
                 </div>
               )}
 
-              {/* TAB 3: CUSTOMER DATABASE (With Internal Preferred Model & Multi-Slot Breakdown) */}
+              {/* TAB 3: CUSTOMER DATABASE (With Cloud-Synced Preferred Model & Multi-Slot Breakdown) */}
               {activeTab === 'customers' && (
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-10">
                   <div className="px-8 py-5 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
@@ -994,23 +996,21 @@
                           activeBookings.map((b, index) => {
                             const veh = vehicles.find(v => v.id === b.vehicle_id);
                             const due = Math.max(0, (b.total_rent || 0) - (b.advance_paid || 0));
-                            const meta = bookingMetaMap[b.id] || {};
-                            const recDate = meta.booking_date || (b.created_at ? b.created_at.split('T')[0] : '2026-10-08');
-                            const prefModel = meta.preferred_model || '—';
+                            const { phone, booking_date, preferred_model } = parseBookingDetails(b);
 
                             return (
                               <tr key={b.id} className="hover:bg-slate-50 transition">
                                 <td className="p-4 text-center font-black text-slate-400">{index + 1}</td>
                                 <td className="p-4 font-black text-slate-900 text-sm">
                                   <div>{b.customer_name}</div>
-                                  <div className="text-[10px] text-amber-700 font-bold">Booked On: {recDate}</div>
+                                  <div className="text-[10px] text-amber-700 font-bold">Booked On: {booking_date}</div>
                                 </td>
                                 <td className="p-4">
-                                  <div className="font-bold">{b.customer_phone}</div>
-                                  <div className="text-[10px] text-emerald-600 font-bold">WA: {b.customer_whatsapp}</div>
+                                  <div className="font-bold">{phone}</div>
+                                  <div className="text-[10px] text-emerald-600 font-bold">WA: {b.customer_whatsapp || phone}</div>
                                 </td>
                                 <td className="p-4 font-black text-blue-700">{veh ? veh.model_name : 'Scooty'}</td>
-                                <td className="p-4 font-black text-purple-700 bg-purple-50/50">{prefModel}</td>
+                                <td className="p-4 font-black text-purple-700 bg-purple-50/50">{preferred_model || '—'}</td>
                                 <td className="p-4 font-bold text-slate-700">{formatSlotDates(b)}</td>
                                 <td className="p-4 text-right font-black text-slate-900">₹{b.total_rent}</td>
                                 <td className="p-4 text-right font-black text-emerald-600">₹{b.advance_paid}</td>
@@ -1084,7 +1084,7 @@
                           recycledBookings.map(b => (
                             <tr key={b.id} className="hover:bg-rose-50/40">
                               <td className="p-4 font-bold text-slate-900">{b.customer_name}</td>
-                              <td className="p-4 font-medium">{b.customer_phone}</td>
+                              <td className="p-4 font-medium">{parseBookingDetails(b).phone}</td>
                               <td className="p-4">{formatSlotDates(b)}</td>
                               <td className="p-4 text-right font-bold">₹{b.total_rent}</td>
                               <td className="p-4 text-right font-bold text-emerald-600">₹{b.advance_paid}</td>
@@ -1487,52 +1487,53 @@
                     <i className="fa-solid fa-xmark text-xl"></i>
                   </button>
                 </div>
-                <div className="space-y-3 text-xs text-slate-700">
-                  <div className="flex justify-between py-1 border-b">
-                    <span className="text-slate-500 font-bold">Customer Name:</span>
-                    <span className="font-black text-slate-900 text-sm">{selectedBookingDetail.booking.customer_name}</span>
-                  </div>
-                  <div className="flex justify-between py-1 border-b">
-                    <span className="text-slate-500 font-bold">Booking Date:</span>
-                    <span className="font-bold text-amber-700">
-                      {bookingMetaMap[selectedBookingDetail.booking.id]?.booking_date || (selectedBookingDetail.booking.created_at ? selectedBookingDetail.booking.created_at.split('T')[0] : '2026-10-08')}
-                    </span>
-                  </div>
-                  <div className="flex justify-between py-1 border-b">
-                    <span className="text-slate-500 font-bold">Internal Preferred Model:</span>
-                    <span className="font-black text-purple-700">
-                      {bookingMetaMap[selectedBookingDetail.booking.id]?.preferred_model || '—'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between py-1 border-b">
-                    <span className="text-slate-500 font-bold">Phone Number:</span>
-                    <span className="font-bold">{selectedBookingDetail.booking.customer_phone}</span>
-                  </div>
-                  <div className="flex justify-between py-1 border-b">
-                    <span className="text-slate-500 font-bold">Actual Assigned:</span>
-                    <span className="font-black text-blue-700 text-sm">{selectedBookingDetail.vehicle.model_name}</span>
-                  </div>
-                  <div className="flex justify-between py-1 border-b">
-                    <span className="text-slate-500 font-bold">Rental Period:</span>
-                    <span className="font-black text-blue-600">{formatSlotDates(selectedBookingDetail.booking)}</span>
-                  </div>
-                  <div className="flex justify-between py-1 border-b">
-                    <span className="text-slate-500 font-bold">Total Rent:</span>
-                    <span className="font-black text-slate-900 text-sm">₹{selectedBookingDetail.booking.total_rent}</span>
-                  </div>
-                  <div className="flex justify-between py-1 border-b">
-                    <span className="text-slate-500 font-bold">Advance (উঠেছে):</span>
-                    <span className="font-black text-emerald-600 text-sm">₹{selectedBookingDetail.booking.advance_paid}</span>
-                  </div>
-                  <div className="flex justify-between py-1 border-b">
-                    <span className="text-slate-500 font-bold">Due (বাকি):</span>
-                    <span className="font-black text-rose-600 text-sm">₹{Math.max(0, (selectedBookingDetail.booking.total_rent || 0) - (selectedBookingDetail.booking.advance_paid || 0))}</span>
-                  </div>
-                  <div className="flex justify-between py-1 border-b">
-                    <span className="text-slate-500 font-bold">Security Deposit:</span>
-                    <span className="font-black text-amber-700">₹{selectedBookingDetail.booking.security_deposit || 1000}</span>
-                  </div>
-                </div>
+                {(() => {
+                  const { phone, booking_date, preferred_model } = parseBookingDetails(selectedBookingDetail.booking);
+                  return (
+                    <div className="space-y-3 text-xs text-slate-700">
+                      <div className="flex justify-between py-1 border-b">
+                        <span className="text-slate-500 font-bold">Customer Name:</span>
+                        <span className="font-black text-slate-900 text-sm">{selectedBookingDetail.booking.customer_name}</span>
+                      </div>
+                      <div className="flex justify-between py-1 border-b">
+                        <span className="text-slate-500 font-bold">Booking Date:</span>
+                        <span className="font-bold text-amber-700">{booking_date}</span>
+                      </div>
+                      <div className="flex justify-between py-1 border-b">
+                        <span className="text-slate-500 font-bold">Internal Preferred Model:</span>
+                        <span className="font-black text-purple-700">{preferred_model || '—'}</span>
+                      </div>
+                      <div className="flex justify-between py-1 border-b">
+                        <span className="text-slate-500 font-bold">Phone Number:</span>
+                        <span className="font-bold">{phone}</span>
+                      </div>
+                      <div className="flex justify-between py-1 border-b">
+                        <span className="text-slate-500 font-bold">Actual Assigned:</span>
+                        <span className="font-black text-blue-700 text-sm">{selectedBookingDetail.vehicle.model_name}</span>
+                      </div>
+                      <div className="flex justify-between py-1 border-b">
+                        <span className="text-slate-500 font-bold">Rental Period:</span>
+                        <span className="font-black text-blue-600">{formatSlotDates(selectedBookingDetail.booking)}</span>
+                      </div>
+                      <div className="flex justify-between py-1 border-b">
+                        <span className="text-slate-500 font-bold">Total Rent:</span>
+                        <span className="font-black text-slate-900 text-sm">₹{selectedBookingDetail.booking.total_rent}</span>
+                      </div>
+                      <div className="flex justify-between py-1 border-b">
+                        <span className="text-slate-500 font-bold">Advance (উঠেছে):</span>
+                        <span className="font-black text-emerald-600 text-sm">₹{selectedBookingDetail.booking.advance_paid}</span>
+                      </div>
+                      <div className="flex justify-between py-1 border-b">
+                        <span className="text-slate-500 font-bold">Due (বাকি):</span>
+                        <span className="font-black text-rose-600 text-sm">₹{Math.max(0, (selectedBookingDetail.booking.total_rent || 0) - (selectedBookingDetail.booking.advance_paid || 0))}</span>
+                      </div>
+                      <div className="flex justify-between py-1 border-b">
+                        <span className="text-slate-500 font-bold">Security Deposit:</span>
+                        <span className="font-black text-amber-700">₹{selectedBookingDetail.booking.security_deposit || 1000}</span>
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Direct Single-Date Early Return Control */}
                 {selectedBookingDetail.date && selectedBookingDetail.shift && (
@@ -1546,7 +1547,7 @@
                         onClick={() => handleCellOverride(selectedBookingDetail.vehicle.id, selectedBookingDetail.date, selectedBookingDetail.shift, 'available')}
                         className="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs transition"
                       >
-                        Make {selectedSlot?.shift || selectedBookingDetail.shift} Available
+                        Make {selectedBookingDetail.shift} Available
                       </button>
                       <button
                         onClick={() => handleCellOverride(selectedBookingDetail.vehicle.id, selectedBookingDetail.date, selectedBookingDetail.shift, 'reset')}
@@ -1634,87 +1635,94 @@
             <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
               <div className="bg-white rounded-2xl shadow-2xl max-w-xl w-full p-8 border border-slate-200 my-8">
                 <div id="printable-invoice" className="text-slate-800 text-xs">
-                  {/* Bill Header */}
-                  <div className="border-b-2 border-slate-800 pb-4 mb-4 flex justify-between items-start">
-                    <div>
-                      <h1 className="text-2xl font-black tracking-tight text-slate-900">KD CAPTAIN</h1>
-                      <p className="text-xs text-slate-500 font-bold">Two-Wheeler Rental Service | Durga Puja 2026 Fleet</p>
-                      <p className="text-xs text-slate-500 font-bold">Kolkata / Delhi</p>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-lg font-black text-slate-800">OFFICIAL RENTAL RECEIPT</div>
-                      <div className="text-xs text-slate-700 font-black mt-1">
-                        Booking Date: {bookingMetaMap[showInvoiceModal.booking.id]?.booking_date || (showInvoiceModal.booking.created_at ? showInvoiceModal.booking.created_at.split('T')[0] : '2026-10-08')}
+                  {(() => {
+                    const { phone, booking_date } = parseBookingDetails(showInvoiceModal.booking);
+                    return (
+                      <div>
+                        {/* Bill Header */}
+                        <div className="border-b-2 border-slate-800 pb-4 mb-4 flex justify-between items-start">
+                          <div>
+                            <h1 className="text-2xl font-black tracking-tight text-slate-900">KD CAPTAIN</h1>
+                            <p className="text-xs text-slate-500 font-bold">Two-Wheeler Rental Service | Durga Puja 2026 Fleet</p>
+                            <p className="text-xs text-slate-500 font-bold">Kolkata / Delhi</p>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-lg font-black text-slate-800">OFFICIAL RENTAL RECEIPT</div>
+                            <div className="text-xs text-slate-700 font-black mt-1">
+                              Booking Date: {booking_date}
+                            </div>
+                            <div className="text-[10px] text-slate-400 font-semibold">Print Date: {new Date().toLocaleDateString()}</div>
+                          </div>
+                        </div>
+
+                        {/* Customer & Vehicle Details (Generic Name Used) */}
+                        <div className="grid grid-cols-2 gap-4 mb-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                          <div>
+                            <div className="text-[10px] uppercase font-black text-slate-400 tracking-wider">Customer Details</div>
+                            <div className="font-black text-slate-900 text-sm mt-1">{showInvoiceModal.booking.customer_name}</div>
+                            <div className="font-bold">Phone: {phone}</div>
+                            <div className="font-bold">WhatsApp: {showInvoiceModal.booking.customer_whatsapp || phone}</div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] uppercase font-black text-slate-400 tracking-wider">Vehicle Assigned</div>
+                            <div className="font-black text-blue-700 text-sm mt-1">
+                              {getGenericCategoryName(showInvoiceModal.vehicle)}
+                            </div>
+                            <div className="font-bold text-slate-500 text-[11px] mt-0.5">Fleet Category: {showInvoiceModal.vehicle.vehicle_type.toUpperCase()}</div>
+                          </div>
+                        </div>
+
+                        {/* Financial Breakdown Table */}
+                        <table className="w-full mb-4 border-collapse">
+                          <thead>
+                            <tr className="border-b border-slate-200 text-slate-500 text-[10px] uppercase font-black">
+                              <th className="py-2 text-left">Description</th>
+                              <th className="py-2 text-right">Amount</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 font-bold">
+                            <tr>
+                              <td className="py-2.5">Rental Duration: {formatSlotDates(showInvoiceModal.booking)}</td>
+                              <td className="py-2.5 text-right font-black">₹{showInvoiceModal.booking.total_rent}</td>
+                            </tr>
+                            <tr>
+                              <td className="py-2.5 text-slate-500">Advance Received (Collected)</td>
+                              <td className="py-2.5 text-right text-emerald-600 font-black">- ₹{showInvoiceModal.booking.advance_paid || 0}</td>
+                            </tr>
+                            <tr>
+                              <td className="py-2.5 text-slate-500">Refundable Security Deposit</td>
+                              <td className="py-2.5 text-right text-amber-700 font-black">₹{showInvoiceModal.booking.security_deposit || 1000}</td>
+                            </tr>
+                            <tr className="font-black text-slate-900 border-t border-slate-300 text-sm">
+                              <td className="py-2.5">Remaining Balance to Pay (Due at Handover)</td>
+                              <td className="py-2.5 text-right text-rose-600">₹{Math.max(0, (showInvoiceModal.booking.total_rent || 0) - (showInvoiceModal.booking.advance_paid || 0))}</td>
+                            </tr>
+                          </tbody>
+                        </table>
+
+                        {/* Mandatory Terms & Conditions (100% English Disclaimers) */}
+                        <div className="border border-slate-200 rounded-xl p-4 bg-slate-50 space-y-2 text-[11px] text-slate-600 leading-relaxed mb-6 font-medium">
+                          <div className="font-black text-slate-900 text-xs mb-1">TERMS & CONDITIONS:</div>
+                          <div>1. <strong>Security Deposit:</strong> A mandatory refundable security deposit of ₹{showInvoiceModal.booking.security_deposit || 1000} must be submitted upon delivery. The amount is 100% refundable upon vehicle return without any accidental or mechanical damage, or can be mutually adjusted with the final rental charge.</div>
+                          <div>2. <strong>Original Identity Proof:</strong> The hirer MUST bring and deposit ONE Original Government Identity Proof (Voter ID / Driving License) at the time of pickup. The document will remain safely deposited with management until vehicle return.</div>
+                          <div>3. <strong>Payment Settlement:</strong> The remaining due balance must be fully cleared before the keys are handed over on the pickup date.</div>
+                          <div>4. <strong>Safe Operation & Liability:</strong> The hirer is fully liable for any traffic violations, fines, challans, or accidental damage incurred during the rental tenure.</div>
+                        </div>
+
+                        {/* Signatures */}
+                        <div className="flex justify-between items-end pt-4 border-t border-slate-200 text-xs font-bold">
+                          <div>
+                            <p className="text-slate-400">Authorized Signature</p>
+                            <p className="font-black mt-4">KD Captain Management</p>
+                          </div>
+                          <div>
+                            <p className="text-slate-400">Customer Signature</p>
+                            <p className="font-black mt-4">_______________________</p>
+                          </div>
+                        </div>
                       </div>
-                      <div className="text-[10px] text-slate-400 font-semibold">Print Date: {new Date().toLocaleDateString()}</div>
-                    </div>
-                  </div>
-
-                  {/* Customer & Vehicle Details (Generic Name Used) */}
-                  <div className="grid grid-cols-2 gap-4 mb-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
-                    <div>
-                      <div className="text-[10px] uppercase font-black text-slate-400 tracking-wider">Customer Details</div>
-                      <div className="font-black text-slate-900 text-sm mt-1">{showInvoiceModal.booking.customer_name}</div>
-                      <div className="font-bold">Phone: {showInvoiceModal.booking.customer_phone}</div>
-                      <div className="font-bold">WhatsApp: {showInvoiceModal.booking.customer_whatsapp}</div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] uppercase font-black text-slate-400 tracking-wider">Vehicle Assigned</div>
-                      <div className="font-black text-blue-700 text-sm mt-1">
-                        {getGenericCategoryName(showInvoiceModal.vehicle)}
-                      </div>
-                      <div className="font-bold text-slate-500 text-[11px] mt-0.5">Fleet Category: {showInvoiceModal.vehicle.vehicle_type.toUpperCase()}</div>
-                    </div>
-                  </div>
-
-                  {/* Financial Breakdown Table */}
-                  <table className="w-full mb-4 border-collapse">
-                    <thead>
-                      <tr className="border-b border-slate-200 text-slate-500 text-[10px] uppercase font-black">
-                        <th className="py-2 text-left">Description</th>
-                        <th className="py-2 text-right">Amount</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 font-bold">
-                      <tr>
-                        <td className="py-2.5">Rental Duration: {formatSlotDates(showInvoiceModal.booking)}</td>
-                        <td className="py-2.5 text-right font-black">₹{showInvoiceModal.booking.total_rent}</td>
-                      </tr>
-                      <tr>
-                        <td className="py-2.5 text-slate-500">Advance Received (Collected)</td>
-                        <td className="py-2.5 text-right text-emerald-600 font-black">- ₹{showInvoiceModal.booking.advance_paid || 0}</td>
-                      </tr>
-                      <tr>
-                        <td className="py-2.5 text-slate-500">Refundable Security Deposit</td>
-                        <td className="py-2.5 text-right text-amber-700 font-black">₹{showInvoiceModal.booking.security_deposit || 1000}</td>
-                      </tr>
-                      <tr className="font-black text-slate-900 border-t border-slate-300 text-sm">
-                        <td className="py-2.5">Remaining Balance to Pay (Due at Handover)</td>
-                        <td className="py-2.5 text-right text-rose-600">₹{Math.max(0, (showInvoiceModal.booking.total_rent || 0) - (showInvoiceModal.booking.advance_paid || 0))}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-
-                  {/* Mandatory Terms & Conditions (100% English Disclaimers) */}
-                  <div className="border border-slate-200 rounded-xl p-4 bg-slate-50 space-y-2 text-[11px] text-slate-600 leading-relaxed mb-6 font-medium">
-                    <div className="font-black text-slate-900 text-xs mb-1">TERMS & CONDITIONS:</div>
-                    <div>1. <strong>Security Deposit:</strong> A mandatory refundable security deposit of ₹{showInvoiceModal.booking.security_deposit || 1000} must be submitted upon delivery. The amount is 100% refundable upon vehicle return without any accidental or mechanical damage, or can be mutually adjusted with the final rental charge.</div>
-                    <div>2. <strong>Original Identity Proof:</strong> The hirer MUST bring and deposit ONE Original Government Identity Proof (Aadhaar Card / Voter ID / Driving License) at the time of pickup. The document will remain safely deposited with management until vehicle return.</div>
-                    <div>3. <strong>Payment Settlement:</strong> The remaining due balance must be fully cleared before the keys are handed over on the pickup date.</div>
-                    <div>4. <strong>Safe Operation & Liability:</strong> The hirer is fully liable for any traffic violations, fines, challans, or accidental damage incurred during the rental tenure.</div>
-                  </div>
-
-                  {/* Signatures */}
-                  <div className="flex justify-between items-end pt-4 border-t border-slate-200 text-xs font-bold">
-                    <div>
-                      <p className="text-slate-400">Authorized Signature</p>
-                      <p className="font-black mt-4">KD Captain Management</p>
-                    </div>
-                    <div>
-                      <p className="text-slate-400">Customer Signature</p>
-                      <p className="font-black mt-4">_______________________</p>
-                    </div>
-                  </div>
+                    );
+                  })()}
                 </div>
 
                 <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-slate-200 no-print">
